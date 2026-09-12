@@ -1,3 +1,5 @@
+import { NexusIcon } from "@/components/brand/nexus-mark"
+
 const columns = [
   {
     title: "Todo",
@@ -49,9 +51,7 @@ export function ProductPreview() {
       <div className="flex min-h-[420px] text-left">
         <aside className="hidden w-[220px] shrink-0 border-e border-apple-hairline bg-apple-parchment p-3 sm:block">
           <div className="mb-4 flex items-center gap-2 px-1">
-            <span className="flex size-6 items-center justify-center rounded-[8px] bg-apple-ink text-[11px] font-semibold text-white">
-              N
-            </span>
+            <NexusIcon className="size-5 text-foreground" />
             <div className="min-w-0 leading-tight">
               <p className="truncate text-[12px] font-semibold tracking-[-0.12px]">
                 Nexus / Workspace

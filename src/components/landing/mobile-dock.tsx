@@ -1,17 +1,12 @@
 "use client"
 
-import {
-  BookOpen,
-  Home,
-  LayoutGrid,
-  Shield,
-} from "lucide-react"
+import { BookOpen, LayoutGrid, Shield } from "lucide-react"
 
+import { NexusIcon } from "@/components/brand/nexus-mark"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Dock, DockIcon } from "@/components/ui/dock"
 
 const items = [
-  { href: "#top", label: "Home", icon: Home },
   { href: "#product", label: "Product", icon: LayoutGrid },
   { href: "#how-it-works", label: "Knowledge", icon: BookOpen },
   { href: "#security", label: "Security", icon: Shield },
@@ -27,6 +22,11 @@ export function MobileDock() {
           iconMagnification={48}
           direction="middle"
         >
+          <DockIcon>
+            <a href="#top" aria-label="Home" className="flex size-full items-center justify-center">
+              <NexusIcon className="text-foreground size-4" />
+            </a>
+          </DockIcon>
           {items.map((item) => (
             <DockIcon key={item.label}>
               <a

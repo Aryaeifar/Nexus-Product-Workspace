@@ -3,7 +3,8 @@
 import { Search } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 
-import { ThemeToggle, ThemeToggleButton } from "@/components/theme-toggle"
+import { NexusLogo } from "@/components/brand/nexus-mark"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { appleDuration, appleEase } from "@/lib/motion"
 
@@ -26,8 +27,8 @@ export function LandingHeader() {
     >
       <div className="bg-apple-black text-white">
         <div className="mx-auto flex h-11 max-w-[980px] items-center justify-between px-5">
-          <a href="#top" className="text-nav">
-            Nexus
+          <a href="#top" className="inline-flex items-center">
+            <NexusLogo className="text-white" />
           </a>
           <nav className="hidden items-center gap-5 md:flex">
             {nav.map((item) => (
