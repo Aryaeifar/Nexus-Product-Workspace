@@ -8,11 +8,11 @@ const items = [
 
 export function LandingTrust() {
   return (
-    <section id="security" className="bg-apple-canvas px-5 py-20">
+    <section id="security" className="bg-background px-5 py-20">
       <div className="mx-auto max-w-[980px] text-center">
         <FadeIn inView>
           <h2 className="text-display-lg">Built for real work.</h2>
-          <p className="text-lead mx-auto mt-4 max-w-[520px] text-apple-ink">
+          <p className="text-lead text-foreground mx-auto mt-4 max-w-[520px]">
             Security and access that stay out of the way until you need them.
           </p>
         </FadeIn>

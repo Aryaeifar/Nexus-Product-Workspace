@@ -3,6 +3,7 @@
 import { Search } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 
+import { ThemeToggle, ThemeToggleButton } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { appleDuration, appleEase } from "@/lib/motion"
 
@@ -35,27 +36,28 @@ export function LandingHeader() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <a href="#product" aria-label="Search" className="text-white/80">
               <Search className="size-3.5" strokeWidth={1.75} />
             </a>
-            <a href="#top" className="text-nav text-white/80">
+            <a href="#top" className="text-nav hidden text-white/80 sm:inline">
               Log in
             </a>
           </div>
         </div>
       </div>
-      <div className="h-[52px] bg-apple-parchment/80 backdrop-blur-[20px] backdrop-saturate-150">
+      <div className="h-[52px] bg-muted/80 backdrop-blur-[20px] backdrop-saturate-150">
         <div className="mx-auto flex h-full max-w-[980px] items-center justify-between px-5">
-          <p className="text-tagline text-apple-ink">Product workspace</p>
-          <div className="hidden items-center gap-5 md:flex">
-            <a href="#product" className="text-caption text-apple-ink">
+          <p className="text-tagline text-foreground">Product workspace</p>
+          <div className="hidden items-center gap-4 md:flex">
+            <a href="#product" className="text-caption text-foreground">
               Issues
             </a>
-            <a href="#how-it-works" className="text-caption text-apple-ink">
+            <a href="#how-it-works" className="text-caption text-foreground">
               Knowledge
             </a>
-            <a href="#security" className="text-caption text-apple-ink">
+            <a href="#security" className="text-caption text-foreground">
               Security
             </a>
             <Button size="sm">Start for free</Button>

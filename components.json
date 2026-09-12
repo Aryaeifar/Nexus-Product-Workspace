@@ -19,5 +19,8 @@
   },
   "rtl": true,
   "menuColor": "default",
-  "menuAccent": "subtle"
+  "menuAccent": "subtle",
+  "registries": {
+    "@magicui": "https://magicui.design/r/{name}"
+  }
 }

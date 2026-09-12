@@ -4,17 +4,17 @@ import { Button } from "@/components/ui/button"
 
 export function LandingHero() {
   return (
-    <section className="bg-apple-canvas px-5 py-16 sm:py-20">
+    <section className="bg-background px-5 py-16 sm:py-20">
       <div className="mx-auto max-w-[980px] text-center">
         <FadeIn>
-          <h1 className="text-hero-display text-apple-ink">
+          <h1 className="text-hero-display text-foreground">
             Your team&apos;s work,
             <br />
             clear and connected.
           </h1>
         </FadeIn>
         <FadeIn delay={0.08}>
-          <p className="text-lead mx-auto mt-4 max-w-[640px] text-apple-ink">
+          <p className="text-lead text-foreground mx-auto mt-4 max-w-[640px]">
             Task management, team knowledge, and product planning in one
             workspace.
           </p>
@@ -28,11 +28,6 @@ export function LandingHero() {
         <ProductReveal className="mt-16">
           <ProductPreview />
         </ProductReveal>
-        <FadeIn delay={0.28}>
-          <p className="text-caption mx-auto mt-10 max-w-md text-apple-ink-muted-48">
-            Trusted by 2,400+ teams of every size.
-          </p>
-        </FadeIn>
       </div>
     </section>
   )

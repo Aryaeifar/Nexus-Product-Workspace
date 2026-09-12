@@ -1,21 +1,83 @@
-import { FadeIn, Stagger, StaggerItem } from "@/components/landing/fade-in"
+import { Calendar, Command, Layers, Bell } from "lucide-react"
+
+import { ActivityList } from "@/components/landing/activity-list"
+import { FadeIn } from "@/components/landing/fade-in"
+import { BentoCard, BentoGrid } from "@/components/ui/bento-grid"
 import { Button } from "@/components/ui/button"
+import { Marquee } from "@/components/ui/marquee"
+
+const pages = [
+  { name: "Onboarding PRD", body: "Nested page for the Q3 launch flow." },
+  { name: "Permissions", body: "Roles, guests, and workspace access." },
+  { name: "Cycle 24", body: "What ships this week — and what waits." },
+  { name: "Design system", body: "Command menu states and tokens." },
+]
 
 const features = [
   {
-    title: "Issues",
-    tagline: "Board. List. Timeline.",
-    body: "See every task in the view that fits the work. Precise filters keep the team on what matters.",
+    Icon: Layers,
+    name: "Knowledge",
+    description: "Nested pages for docs and decisions — nothing rebuilt from scratch.",
+    href: "#how-it-works",
+    cta: "Learn more",
+    className: "col-span-3 lg:col-span-1",
+    background: (
+      <Marquee
+        pauseOnHover
+        className="absolute top-10 [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] [--duration:22s]"
+      >
+        {pages.map((page) => (
+          <figure
+            key={page.name}
+            className="w-36 rounded-[11px] border border-apple-hairline bg-background p-3 dark:border-white/10"
+          >
+            <figcaption className="text-caption font-semibold">{page.name}</figcaption>
+            <blockquote className="text-fine mt-1 text-muted-foreground">
+              {page.body}
+            </blockquote>
+          </figure>
+        ))}
+      </Marquee>
+    ),
   },
   {
-    title: "Knowledge",
-    tagline: "Nested pages that stay connected.",
-    body: "Docs and decisions live next to the work — so nothing important is rebuilt from scratch.",
+    Icon: Bell,
+    name: "Live activity",
+    description: "See comments, cycle moves, and assignments as they happen.",
+    href: "#how-it-works",
+    cta: "Learn more",
+    className: "col-span-3 lg:col-span-2",
+    background: (
+      <ActivityList className="absolute top-6 right-0 w-full scale-90 [mask-image:linear-gradient(to_top,transparent_8%,#000_55%)]" />
+    ),
   },
   {
-    title: "Speed",
-    tagline: "Command Palette. Shortcuts.",
-    body: "Move through the workspace without leaving the page. ⌘K is the front door.",
+    Icon: Command,
+    name: "Command Palette",
+    description: "⌘K is the front door. Shortcuts move you without leaving the page.",
+    href: "#how-it-works",
+    cta: "Learn more",
+    className: "col-span-3 lg:col-span-2",
+    background: (
+      <div className="absolute top-10 left-8 right-8 rounded-full border border-apple-hairline bg-background px-5 py-3 text-left dark:border-white/10">
+        <p className="text-caption text-muted-foreground">Search issues, pages, people</p>
+        <p className="text-body-strong mt-1">NEX-204 Sync activity timeline</p>
+      </div>
+    ),
+  },
+  {
+    Icon: Calendar,
+    name: "Cycles",
+    description: "Roadmap and Cycles stay the single source of truth.",
+    href: "#security",
+    cta: "Learn more",
+    className: "col-span-3 lg:col-span-1",
+    background: (
+      <div className="absolute top-12 right-6 rounded-[18px] border border-apple-hairline bg-background px-4 py-3 dark:border-white/10">
+        <p className="text-caption text-muted-foreground">Current cycle</p>
+        <p className="text-body-strong">Q3 launch · 12 issues</p>
+      </div>
+    ),
   },
 ]
 
@@ -39,21 +101,12 @@ export function LandingFeatures() {
           </FadeIn>
         </div>
       </div>
-      <div className="bg-apple-parchment px-5 py-20">
-        <Stagger className="mx-auto grid max-w-[980px] gap-5 md:grid-cols-3">
+      <div className="bg-muted px-5 py-20">
+        <BentoGrid className="mx-auto max-w-[980px] grid-cols-1 sm:grid-cols-3">
           {features.map((feature) => (
-            <StaggerItem key={feature.title}>
-              <article className="rounded-[18px] border border-apple-hairline bg-apple-canvas p-6">
-                <h3 className="text-body-strong">{feature.title}</h3>
-                <p className="text-caption mt-2 text-apple-ink">{feature.tagline}</p>
-                <p className="text-caption mt-3 text-apple-ink-muted-48">{feature.body}</p>
-                <a href="#how-it-works" className="text-caption mt-5 inline-block text-apple-primary">
-                  Learn more
-                </a>
-              </article>
-            </StaggerItem>
+            <BentoCard key={feature.name} {...feature} />
           ))}
-        </Stagger>
+        </BentoGrid>
       </div>
     </section>
   )
