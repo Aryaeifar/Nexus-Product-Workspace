@@ -45,16 +45,18 @@ const columns = [
 
 export function ProductPreview() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-black/8 bg-white shadow-[0_24px_80px_-24px_rgba(15,15,15,0.28)]">
-      <div className="flex min-h-[420px]">
-        <aside className="hidden w-[220px] shrink-0 border-e border-black/6 bg-[#fafafa] p-3 sm:block">
+    <div className="shadow-product overflow-hidden rounded-[18px] border border-apple-hairline bg-apple-canvas">
+      <div className="flex min-h-[420px] text-left">
+        <aside className="hidden w-[220px] shrink-0 border-e border-apple-hairline bg-apple-parchment p-3 sm:block">
           <div className="mb-4 flex items-center gap-2 px-1">
-            <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-[11px] font-semibold text-background">
-              V
+            <span className="flex size-6 items-center justify-center rounded-[8px] bg-apple-ink text-[11px] font-semibold text-white">
+              N
             </span>
             <div className="min-w-0 leading-tight">
-              <p className="truncate text-[12px] font-medium">Vela / Product workspace</p>
-              <p className="truncate text-[11px] text-muted-foreground">Acme team</p>
+              <p className="truncate text-[12px] font-semibold tracking-[-0.12px]">
+                Nexus / Workspace
+              </p>
+              <p className="truncate text-[11px] text-apple-ink-muted-48">Acme team</p>
             </div>
           </div>
           <div className="space-y-0.5 text-[12px]">
@@ -63,7 +65,7 @@ export function ProductPreview() {
             <Row label="Roadmap" />
             <Row label="Knowledge" />
           </div>
-          <p className="mt-5 px-2 text-[10px] font-medium tracking-[0.14em] text-muted-foreground">
+          <p className="mt-5 px-2 text-[10px] font-semibold tracking-[0.08em] text-apple-ink-muted-48">
             WORKSPACE
           </p>
           <div className="mt-1 space-y-0.5 text-[12px]">
@@ -73,42 +75,46 @@ export function ProductPreview() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/6 px-4 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-apple-hairline px-4 py-2.5">
             <div>
-              <p className="text-[13px] font-medium">Product / Q3 launch</p>
-              <p className="text-[11px] text-muted-foreground">Current cycle</p>
+              <p className="text-[13px] font-semibold tracking-[-0.12px]">
+                Product / Q3 launch
+              </p>
+              <p className="text-[11px] text-apple-ink-muted-48">Current cycle</p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-md border border-black/8 bg-[#f7f7f7] px-2 py-1 text-[11px] text-muted-foreground">
+            <div className="flex h-8 items-center gap-1.5 rounded-full border border-black/8 bg-apple-canvas px-3 text-[12px] text-apple-ink-muted-48">
               Search
-              <kbd className="rounded border border-black/8 bg-white px-1 font-mono text-[10px]">
-                ⌘K
-              </kbd>
+              <kbd className="text-[10px] tracking-[-0.08px]">⌘K</kbd>
             </div>
           </div>
-          <div className="flex gap-4 border-b border-black/6 px-4 text-[12px]">
+          <div className="flex gap-5 border-b border-apple-hairline px-4 text-[12px]">
             <Tab label="Board" count="12" active />
             <Tab label="List" />
             <Tab label="Timeline" />
             <Tab label="Activity" />
           </div>
-          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 bg-apple-parchment p-3 sm:grid-cols-3">
             {columns.map((column) => (
-              <div key={column.title} className="rounded-xl bg-[#f6f6f6] p-2">
+              <div key={column.title} className="p-1">
                 <div className="mb-2 flex items-center justify-between px-1 text-[11px]">
-                  <span className="font-medium">{column.title}</span>
-                  <span className="text-muted-foreground">{column.count}</span>
+                  <span className="font-semibold">{column.title}</span>
+                  <span className="text-apple-ink-muted-48">{column.count}</span>
                 </div>
                 <div className="space-y-2">
                   {column.cards.map((card) => (
                     <article
                       key={card.id}
-                      className="rounded-lg border border-black/6 bg-white p-2.5 shadow-sm"
+                      className="rounded-[8px] border border-apple-hairline bg-apple-canvas p-2.5"
                     >
-                      <p className="font-mono text-[10px] text-muted-foreground">{card.id}</p>
-                      <p className="mt-1 text-[12px] leading-snug font-medium">{card.title}</p>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+                      <p className="font-mono text-[10px] text-apple-ink-muted-48">
+                        {card.id}
+                      </p>
+                      <p className="mt-1 text-[12px] leading-snug font-semibold">
+                        {card.title}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-apple-ink-muted-48">
                         <span>{card.team}</span>
-                        <span className="flex size-5 items-center justify-center rounded-full bg-foreground/90 text-[9px] text-background">
+                        <span className="flex size-5 items-center justify-center rounded-full bg-apple-ink text-[9px] text-white">
                           {card.mark}
                         </span>
                       </div>
@@ -135,13 +141,13 @@ function Row({
 }) {
   return (
     <div
-      className={`flex items-center justify-between rounded-md px-2 py-1.5 ${
-        active ? "bg-black/6 font-medium text-foreground" : "text-muted-foreground"
+      className={`flex items-center justify-between rounded-[8px] px-2 py-1.5 ${
+        active ? "bg-black/6 font-semibold text-apple-ink" : "text-apple-ink-muted-48"
       }`}
     >
       <span>{label}</span>
       {badge ? (
-        <span className="rounded-full bg-foreground px-1.5 text-[10px] text-background">
+        <span className="rounded-full bg-apple-ink px-1.5 text-[10px] text-white">
           {badge}
         </span>
       ) : null}
@@ -162,12 +168,12 @@ function Tab({
     <span
       className={`border-b-2 py-2.5 ${
         active
-          ? "border-foreground font-medium text-foreground"
-          : "border-transparent text-muted-foreground"
+          ? "border-apple-primary font-semibold text-apple-ink"
+          : "border-transparent text-apple-ink-muted-48"
       }`}
     >
       {label}
-      {count ? <span className="ms-1 text-muted-foreground">{count}</span> : null}
+      {count ? <span className="ms-1 text-apple-ink-muted-48">{count}</span> : null}
     </span>
   )
 }

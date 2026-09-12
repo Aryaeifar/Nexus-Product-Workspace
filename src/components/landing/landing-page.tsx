@@ -7,7 +7,7 @@ import { LandingTrust } from "@/components/landing/trust"
 
 export function LandingPage() {
   return (
-    <div id="top" className="min-h-svh bg-[#f4f3f0] text-foreground">
+    <div id="top" className="min-h-svh bg-apple-canvas text-apple-ink">
       <LandingHeader />
       <main>
         <LandingHero />

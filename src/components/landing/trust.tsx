@@ -1,3 +1,5 @@
+import { FadeIn, Stagger, StaggerItem } from "@/components/landing/fade-in"
+
 const items = [
   { title: "SOC 2 ready", body: "Secure enough for real team work." },
   { title: "Role-based access", body: "Access by role, not by guesswork." },
@@ -6,19 +8,24 @@ const items = [
 
 export function LandingTrust() {
   return (
-    <section id="security" className="border-t border-black/6 px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        <p className="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          Built for real work
-        </p>
-        <div className="mt-6 grid gap-6 sm:grid-cols-3">
+    <section id="security" className="bg-apple-canvas px-5 py-20">
+      <div className="mx-auto max-w-[980px] text-center">
+        <FadeIn inView>
+          <h2 className="text-display-lg">Built for real work.</h2>
+          <p className="text-lead mx-auto mt-4 max-w-[520px] text-apple-ink">
+            Security and access that stay out of the way until you need them.
+          </p>
+        </FadeIn>
+        <Stagger className="mt-16 grid gap-12 text-left sm:grid-cols-3">
           {items.map((item) => (
-            <div key={item.title}>
-              <h3 className="font-heading text-lg font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{item.body}</p>
-            </div>
+            <StaggerItem key={item.title}>
+              <div>
+                <h3 className="text-body-strong">{item.title}</h3>
+                <p className="text-body mt-2 text-apple-ink-muted-48">{item.body}</p>
+              </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </div>
     </section>
   )
