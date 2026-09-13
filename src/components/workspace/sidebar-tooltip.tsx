@@ -18,9 +18,9 @@ export function SidebarTooltip({
       {children}
       <span
         className={cn(
-          "pointer-events-none absolute start-full top-1/2 z-50 ms-2 -translate-y-1/2",
-          "rounded-md bg-apple-ink px-2 py-1 text-[12px] whitespace-nowrap text-white",
-          "opacity-0 transition-opacity group-hover:opacity-100"
+          "pointer-events-none absolute start-full top-1/2 z-50 ms-3 -translate-y-1/2",
+          "rounded-lg bg-foreground px-2.5 py-1 text-[12px] font-medium whitespace-nowrap text-background",
+          "opacity-0 shadow-[0_8px_24px_rgb(0_0_0/0.18)] transition-opacity duration-150 group-hover:opacity-100"
         )}
       >
         {label}
