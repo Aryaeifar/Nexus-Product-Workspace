@@ -25,6 +25,7 @@ interface HighlighterProps {
   padding?: number
   multiline?: boolean
   isView?: boolean
+  enabled?: boolean
 }
 
 export function Highlighter({
@@ -37,6 +38,7 @@ export function Highlighter({
   padding = 2,
   multiline = true,
   isView = false,
+  enabled = true,
 }: HighlighterProps) {
   const elementRef = useRef<HTMLSpanElement>(null)
 
@@ -45,7 +47,7 @@ export function Highlighter({
     amount: 0.4,
   })
 
-  const shouldShow = !isView || isInView
+  const shouldShow = enabled && (!isView || isInView)
 
   useLayoutEffect(() => {
     const element = elementRef.current

@@ -16,6 +16,7 @@ import { useEffect, useState } from "react"
 
 import { NexusIcon, NexusLogo } from "@/components/brand/nexus-mark"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Highlighter } from "@/components/ui/highlighter"
 import { SidebarTooltip } from "@/components/workspace/sidebar-tooltip"
 import { cn } from "@/lib/utils"
 
@@ -32,17 +33,15 @@ const STORAGE_KEY = "nexus.sidebar.collapsed"
 export function WorkspaceSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const [hash, setHash] = useState("")
+  const [activeHref, setActiveHref] = useState("/home")
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY) === "true") setCollapsed(true)
   }, [])
 
   useEffect(() => {
-    const sync = () => setHash(window.location.hash)
-    sync()
-    window.addEventListener("hashchange", sync)
-    return () => window.removeEventListener("hashchange", sync)
+    const hash = window.location.hash
+    setActiveHref(hash ? `${pathname}${hash}` : pathname)
   }, [pathname])
 
   function toggle() {
@@ -100,13 +99,13 @@ export function WorkspaceSidebar() {
         </button>
       </div>
 
-      <div className={cn("px-3", collapsed && "px-2")}>
+      <div className={cn("px-3", collapsed && "flex justify-center px-2")}>
         <Link
           href="/home"
           aria-label="Search"
           className={cn(
-            "text-muted-foreground group relative flex items-center rounded-xl border border-sidebar-border/80 bg-black/[0.03] transition-colors hover:bg-black/[0.06] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]",
-            collapsed ? "size-10 justify-center" : "h-10 gap-2 px-3"
+            "text-muted-foreground group relative flex items-center justify-center rounded-xl border border-sidebar-border/80 bg-black/[0.03] transition-colors hover:bg-black/[0.06] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]",
+            collapsed ? "size-10" : "h-10 justify-start gap-2 px-3"
           )}
         >
           <SidebarTooltip enabled={collapsed} label="Search">
@@ -129,27 +128,18 @@ export function WorkspaceSidebar() {
             Workspace
           </p>
         )}
-        {NAV.map((item) => {
-          const itemHash = item.href.includes("#")
-            ? `#${item.href.split("#")[1]}`
-            : ""
-          const active = itemHash
-            ? hash === itemHash
-            : pathname === "/home" && hash === ""
-
-          return (
-            <SidebarItem
-              key={item.label}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              badge={item.badge}
-              collapsed={collapsed}
-              active={active}
-              onSelect={() => setHash(itemHash)}
-            />
-          )
-        })}
+        {NAV.map((item) => (
+          <SidebarItem
+            key={item.label}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            badge={item.badge}
+            collapsed={collapsed}
+            active={activeHref === item.href}
+            onSelect={() => setActiveHref(item.href)}
+          />
+        ))}
       </nav>
 
       <div className={cn("mt-auto px-3 pb-3", collapsed && "px-2")}>
@@ -203,25 +193,41 @@ function SidebarItem({
       aria-current={active ? "page" : undefined}
       onClick={onSelect}
       className={cn(
-        "group relative flex items-center rounded-xl text-[13.5px] tracking-[-0.2px] transition-colors",
-        collapsed ? "h-10 justify-center" : "h-9 gap-2.5 px-2.5",
+        "group relative flex items-center overflow-visible rounded-xl text-[13.5px] tracking-[-0.2px] transition-colors",
+        collapsed ? "h-10 justify-center" : "min-h-9 gap-2.5 px-2.5 py-1.5",
         active
-          ? "bg-black/[0.06] font-medium text-sidebar-foreground dark:bg-white/[0.08]"
-          : "text-muted-foreground hover:bg-black/[0.04] hover:text-sidebar-foreground dark:hover:bg-white/[0.06]"
+          ? "font-medium text-sidebar-foreground"
+          : "text-muted-foreground hover:text-sidebar-foreground"
       )}
     >
-      {active && !collapsed ? (
-        <span
-          aria-hidden
-          className="bg-sidebar-foreground absolute start-0 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[1px]"
-        />
-      ) : null}
       <SidebarTooltip enabled={collapsed} label={label}>
-        <Icon
-          className={cn("size-[18px] shrink-0", active && "text-sidebar-foreground")}
-        />
+        {collapsed ? (
+          <Highlighter
+            action="underline"
+            color="#2997ff"
+            enabled={active}
+            padding={3}
+            multiline={false}
+          >
+            <Icon className="size-[18px] shrink-0" />
+          </Highlighter>
+        ) : (
+          <Icon className="size-[18px] shrink-0" />
+        )}
       </SidebarTooltip>
-      {collapsed ? null : <span className="min-w-0 flex-1 truncate">{label}</span>}
+      {collapsed ? null : (
+        <span className="min-w-0 overflow-visible">
+          <Highlighter
+            action="underline"
+            color="#2997ff"
+            enabled={active}
+            padding={4}
+            multiline={false}
+          >
+            {label}
+          </Highlighter>
+        </span>
+      )}
       {collapsed || !badge ? null : (
         <span className="rounded-full bg-foreground/8 px-1.5 text-[10px] font-medium text-muted-foreground">
           {badge}
