@@ -48,7 +48,7 @@ export function LandingFooter() {
           ))}
         </div>
         <div className="mt-12 flex flex-col gap-3">
-          <NexusLogo className="text-foreground h-3.5" />
+          <NexusLogo className="text-foreground h-5" />
           <p className="text-fine text-muted-foreground">© 2026 Nexus</p>
         </div>
       </div>

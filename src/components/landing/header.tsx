@@ -2,10 +2,11 @@
 
 import { Search } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
+import Link from "next/link"
 
 import { NexusLogo } from "@/components/brand/nexus-mark"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { appleDuration, appleEase } from "@/lib/motion"
 
 const nav = [
@@ -28,7 +29,7 @@ export function LandingHeader() {
       <div className="bg-apple-black text-white">
         <div className="mx-auto flex h-11 max-w-[980px] items-center justify-between px-5">
           <a href="#top" className="inline-flex items-center">
-            <NexusLogo className="text-white" />
+            <NexusLogo className="text-white h-[18px]" />
           </a>
           <nav className="hidden items-center gap-5 md:flex">
             {nav.map((item) => (
@@ -61,11 +62,13 @@ export function LandingHeader() {
             <a href="#security" className="text-caption text-foreground">
               Security
             </a>
-            <Button size="sm">Start for free</Button>
+            <Link href="/home" className={buttonVariants({ size: "sm" })}>
+              Start for free
+            </Link>
           </div>
-          <Button size="sm" className="md:hidden">
+          <Link href="/home" className={`${buttonVariants({ size: "sm" })} md:hidden`}>
             Start
-          </Button>
+          </Link>
         </div>
       </div>
     </motion.header>

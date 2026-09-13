@@ -4,6 +4,7 @@ import { ActivityList } from "@/components/landing/activity-list"
 import { FadeIn } from "@/components/landing/fade-in"
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid"
 import { Button } from "@/components/ui/button"
+import { Highlighter } from "@/components/ui/highlighter"
 import { Marquee } from "@/components/ui/marquee"
 
 const pages = [
@@ -87,9 +88,18 @@ export function LandingFeatures() {
       <div className="bg-apple-tile-1 px-5 py-20 text-center text-white">
         <div className="mx-auto max-w-[980px]">
           <FadeIn inView>
-            <h2 className="text-display-lg">From rough idea to shipped work.</h2>
+            <h2 className="text-display-lg">
+              From rough idea to{" "}
+              <Highlighter action="highlight" color="#3d5a80" isView>
+                shipped work
+              </Highlighter>
+              .
+            </h2>
             <p className="text-lead mx-auto mt-4 max-w-[620px] text-apple-body-muted">
-              Build the workflow where conversations, decisions, and team knowledge
+              Build the workflow where conversations, decisions, and{" "}
+              <Highlighter action="underline" color="#2997ff" isView>
+                team knowledge
+              </Highlighter>{" "}
               already live.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

@@ -1,4 +1,5 @@
 import { FadeIn, Stagger, StaggerItem } from "@/components/landing/fade-in"
+import { Highlighter } from "@/components/ui/highlighter"
 
 const points = [
   {
@@ -27,7 +28,10 @@ export function LandingClarity() {
           <h2 className="text-display-lg">
             Clarity without
             <br />
-            another meeting.
+            <Highlighter action="highlight" color="#3d5a80" isView>
+              another meeting
+            </Highlighter>
+            .
           </h2>
           <p className="text-lead mx-auto mt-4 max-w-[560px] text-apple-body-muted">
             The workspace is the meeting. Everyone already knows the plan.

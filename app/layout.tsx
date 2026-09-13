@@ -19,10 +19,6 @@ export const metadata: Metadata = {
   title: "Nexus — Your team’s work, clear and connected",
   description:
     "Nexus combines task management, team knowledge, and product planning so everyone knows what matters and what comes next.",
-  icons: {
-    icon: "/brand/nexus-icon.png",
-    apple: "/brand/nexus-icon.png",
-  },
   openGraph: {
     title: "Nexus — Your team’s work, clear and connected",
     description:

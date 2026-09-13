@@ -1,4 +1,5 @@
 import { FadeIn, Stagger, StaggerItem } from "@/components/landing/fade-in"
+import { Highlighter } from "@/components/ui/highlighter"
 
 const items = [
   { title: "SOC 2 ready", body: "Secure enough for real team work." },
@@ -11,7 +12,13 @@ export function LandingTrust() {
     <section id="security" className="bg-background px-5 py-20">
       <div className="mx-auto max-w-[980px] text-center">
         <FadeIn inView>
-          <h2 className="text-display-lg">Built for real work.</h2>
+          <h2 className="text-display-lg">
+            Built for{" "}
+            <Highlighter action="highlight" color="#cce4ff" isView>
+              real work
+            </Highlighter>
+            .
+          </h2>
           <p className="text-lead text-foreground mx-auto mt-4 max-w-[520px]">
             Security and access that stay out of the way until you need them.
           </p>

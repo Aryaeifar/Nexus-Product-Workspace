@@ -1,6 +1,9 @@
+import Link from "next/link"
+
 import { FadeIn, ProductReveal } from "@/components/landing/fade-in"
 import { ProductPreview } from "@/components/landing/product-preview"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { Highlighter } from "@/components/ui/highlighter"
 
 export function LandingHero() {
   return (
@@ -10,7 +13,10 @@ export function LandingHero() {
           <h1 className="text-hero-display text-foreground">
             Your team&apos;s work,
             <br />
-            clear and connected.
+            <Highlighter action="highlight" color="#cce4ff">
+              clear and connected
+            </Highlighter>
+            .
           </h1>
         </FadeIn>
         <FadeIn delay={0.08}>
@@ -21,8 +27,12 @@ export function LandingHero() {
         </FadeIn>
         <FadeIn delay={0.16}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Button>Create your workspace</Button>
-            <Button variant="outline">Learn more</Button>
+            <Link href="/home" className={buttonVariants()}>
+              Create your workspace
+            </Link>
+            <Link href="#product" className={buttonVariants({ variant: "outline" })}>
+              Learn more
+            </Link>
           </div>
         </FadeIn>
         <ProductReveal className="mt-16">
