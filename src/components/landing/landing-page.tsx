@@ -1,3 +1,4 @@
+import { PageBreadcrumb } from "@/components/workspace/page-breadcrumb"
 import { LandingClarity } from "@/components/landing/clarity"
 import { LandingFeatures } from "@/components/landing/features"
 import { LandingFooter } from "@/components/landing/footer"
@@ -11,6 +12,9 @@ export function LandingPage() {
   return (
     <div id="top" className="bg-background text-foreground min-h-svh pb-24 md:pb-0">
       <LandingHeader />
+      <div className="mx-auto max-w-[980px] px-5 pt-4">
+        <PageBreadcrumb />
+      </div>
       <main>
         <LandingHero />
         <LogoMarquee />
