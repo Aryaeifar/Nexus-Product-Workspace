@@ -1,4 +1,5 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, expect, test } from "vitest"
 
 import { GettingStarted } from "@/components/workspace/getting-started"
@@ -96,4 +97,74 @@ test("reorders tasks with the keyboard drag", async () => {
   } finally {
     restoreLayout?.()
   }
+})
+
+test("right-clicking the drag handle duplicates, recolors, and deletes", async () => {
+  const user = userEvent.setup()
+  render(<GettingStarted />)
+
+  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+
+  async function openHandleMenu() {
+    const handle = screen.getAllByRole("button", { name: "Drag to reorder" })[0]
+    if (!handle) throw new Error("Missing drag handle")
+    fireEvent.contextMenu(handle)
+    await screen.findByRole("menuitem", { name: "Duplicate" })
+  }
+
+  async function highlight(
+    name: string,
+    role: "menuitem" | "menuitemradio" = "menuitem"
+  ) {
+    const item = screen.getByRole(role, { name })
+    for (let step = 0; step < 8; step += 1) {
+      if (item.hasAttribute("data-highlighted")) return
+      await user.keyboard("{ArrowDown}")
+    }
+    throw new Error(`Could not highlight ${name}`)
+  }
+
+  async function pick(menu: "Color" | "Background", swatch: string) {
+    await openHandleMenu()
+    await highlight(menu)
+    await user.keyboard("{Enter}")
+    await screen.findByRole("menuitem", { name: menu, expanded: true })
+    await highlight(swatch, "menuitemradio")
+    await user.keyboard("{Enter}")
+    await waitFor(() => {
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    })
+  }
+
+  await pick("Color", "Red")
+  await pick("Background", "Blue")
+
+  await openHandleMenu()
+  await user.click(screen.getByRole("menuitem", { name: "Duplicate" }))
+  await waitFor(() => {
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  expect(screen.getAllByDisplayValue("First")).toHaveLength(2)
+  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
+    title: string
+    color?: string
+    background?: string
+  }[]
+  expect(stored.map((todo) => todo.title)).toEqual(["First", "First", "Second"])
+  expect(stored[0]).toMatchObject({ color: "red", background: "blue" })
+  expect(stored[1]).toMatchObject({ color: "red", background: "blue" })
+  expect(stored[2]?.color).toBeUndefined()
+
+  await openHandleMenu()
+  await user.click(screen.getByRole("menuitem", { name: "Delete" }))
+
+  await waitFor(() => {
+    expect(screen.getAllByDisplayValue("First")).toHaveLength(1)
+  })
+  expect(screen.getByDisplayValue("Second")).toBeInTheDocument()
+  const afterDelete = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
+    title: string
+  }[]
+  expect(afterDelete.map((todo) => todo.title)).toEqual(["First", "Second"])
 })
