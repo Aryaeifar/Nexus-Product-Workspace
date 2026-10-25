@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 
 const NAV = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/home#inbox", label: "Inbox", icon: Inbox, badge: "3" },
+  { href: "/home/inbox", label: "Inbox", icon: Inbox, badge: "3" },
   { href: "/home#issues", label: "Issues", icon: LayoutGrid },
   { href: "/home#knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/home#roadmap", label: "Roadmap", icon: Map },
