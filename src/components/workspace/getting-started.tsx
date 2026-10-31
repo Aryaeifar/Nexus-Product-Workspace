@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { AnimatePresence } from "motion/react"
+import { AnimatePresence, animate, motion, useMotionValue } from "motion/react"
 import {
   CheckSquare,
   Copy,
@@ -33,7 +33,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { useEffect, useRef, useState, type PointerEvent } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
 
 import { AnimatedListItem } from "@/components/ui/animated-list"
 import {
@@ -166,11 +166,31 @@ function currentElapsed(timer: TaskTimer, now: number) {
 
 type TimerCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
-const TIMER_CORNER_CLASS: Record<TimerCorner, string> = {
-  "top-left": "top-6 left-6",
-  "top-right": "top-6 right-6",
-  "bottom-left": "bottom-6 left-6",
-  "bottom-right": "bottom-6 right-6",
+const TIMER_INSET = 24
+
+const TIMER_SNAP = {
+  type: "spring" as const,
+  stiffness: 210,
+  damping: 24,
+  mass: 0.85,
+}
+
+function timerCornerPosition(
+  corner: TimerCorner,
+  width: number,
+  height: number
+) {
+  const vw = typeof window === "undefined" ? 1200 : window.innerWidth
+  const vh = typeof window === "undefined" ? 800 : window.innerHeight
+  const left = TIMER_INSET
+  const top = TIMER_INSET
+  const right = Math.max(TIMER_INSET, vw - width - TIMER_INSET)
+  const bottom = Math.max(TIMER_INSET, vh - height - TIMER_INSET)
+
+  if (corner === "top-left") return { x: left, y: top }
+  if (corner === "top-right") return { x: right, y: top }
+  if (corner === "bottom-left") return { x: left, y: bottom }
+  return { x: right, y: bottom }
 }
 
 function nearestTimerCorner(x: number, y: number, width: number, height: number) {
@@ -224,9 +244,10 @@ export function GettingStarted() {
     setTodos((current) =>
       current.map((todo) => (todo.id === id ? { ...todo, ...patch } : todo))
     )
-    if (patch.title !== undefined) {
+    if (typeof patch.title === "string") {
+      const title = patch.title
       setTimer((current) =>
-        current?.taskId === id ? { ...current, title: patch.title } : current
+        current?.taskId === id ? { ...current, title } : current
       )
     }
   }
@@ -448,14 +469,52 @@ function TaskTimerCard({
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const dragOffset = useRef({ x: 0, y: 0 })
+  const dragSize = useRef({ width: 240, height: 108 })
   const dragging = useRef(false)
+  const snapX = useRef<ReturnType<typeof animate> | null>(null)
+  const snapY = useRef<ReturnType<typeof animate> | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const [drag, setDrag] = useState<{
-    x: number
-    y: number
-    width: number
-    height: number
-  } | null>(null)
+  const [draggingCard, setDraggingCard] = useState(false)
+  const x = useMotionValue(TIMER_INSET)
+  const y = useMotionValue(TIMER_INSET)
+
+  function stopSnap() {
+    snapX.current?.stop()
+    snapY.current?.stop()
+    snapX.current = null
+    snapY.current = null
+  }
+
+  function placeAtCorner(next: TimerCorner, width: number, height: number) {
+    const target = timerCornerPosition(next, width, height)
+    stopSnap()
+    snapX.current = animate(x, target.x, TIMER_SNAP)
+    snapY.current = animate(y, target.y, TIMER_SNAP)
+  }
+
+  useLayoutEffect(() => {
+    const width = cardRef.current?.offsetWidth ?? 240
+    const height = cardRef.current?.offsetHeight ?? 108
+    const target = timerCornerPosition(corner, width, height)
+    x.set(target.x)
+    y.set(target.y)
+    // Only pin the initial mount; later drops are animated in onPointerUp.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    function onResize() {
+      if (dragging.current) return
+      const width = cardRef.current?.offsetWidth ?? 240
+      const height = cardRef.current?.offsetHeight ?? 108
+      const target = timerCornerPosition(corner, width, height)
+      x.set(target.x)
+      y.set(target.y)
+    }
+
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [corner, x, y])
 
   useEffect(() => {
     setNow(Date.now())
@@ -470,46 +529,38 @@ function TaskTimerCard({
     const rect = cardRef.current?.getBoundingClientRect()
     if (!rect) return
     dragging.current = true
+    setDraggingCard(true)
+    stopSnap()
+    dragSize.current = { width: rect.width, height: rect.height }
     dragOffset.current = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
     }
-    setDrag({
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height,
-    })
+    x.set(rect.left)
+    y.set(rect.top)
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return
-    setDrag((current) =>
-      current
-        ? {
-            ...current,
-            x: event.clientX - dragOffset.current.x,
-            y: event.clientY - dragOffset.current.y,
-          }
-        : current
-    )
+    x.set(event.clientX - dragOffset.current.x)
+    y.set(event.clientY - dragOffset.current.y)
   }
 
   function onPointerUp(event: PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return
     dragging.current = false
-    const width = drag?.width ?? cardRef.current?.offsetWidth ?? 0
-    const height = drag?.height ?? cardRef.current?.offsetHeight ?? 0
-    onCornerChange(
-      nearestTimerCorner(
-        event.clientX - dragOffset.current.x,
-        event.clientY - dragOffset.current.y,
-        width,
-        height
-      )
+    setDraggingCard(false)
+    const width = dragSize.current.width
+    const height = dragSize.current.height
+    const next = nearestTimerCorner(
+      event.clientX - dragOffset.current.x,
+      event.clientY - dragOffset.current.y,
+      width,
+      height
     )
-    setDrag(null)
+    onCornerChange(next)
+    placeAtCorner(next, width, height)
     event.currentTarget.releasePointerCapture?.(event.pointerId)
   }
 
@@ -517,21 +568,17 @@ function TaskTimerCard({
     "inline-flex size-7 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       data-corner={corner}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      style={
-        drag
-          ? { top: drag.y, left: drag.x, right: "auto", bottom: "auto" }
-          : undefined
-      }
+      style={{ top: y, left: x }}
       className={cn(
         "pointer-events-auto fixed z-50 w-[240px] cursor-grab overflow-hidden rounded-[22px] bg-white/50 p-3 shadow-[0_8px_32px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-2xl backdrop-saturate-150 select-none dark:bg-white/8 dark:shadow-[0_12px_40px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]",
-        drag ? "cursor-grabbing" : TIMER_CORNER_CLASS[corner]
+        draggingCard && "cursor-grabbing"
       )}
     >
       <div
@@ -576,7 +623,7 @@ function TaskTimerCard({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
