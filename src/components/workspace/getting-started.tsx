@@ -24,7 +24,11 @@ import {
   GripVertical,
   PaintBucket,
   Palette,
+  Pause,
+  Play,
+  PlayCircle,
   Plus,
+  Square,
   Trash2,
   X,
   type LucideIcon,
@@ -138,9 +142,32 @@ function createTodo(title = ""): Todo {
   return { id: crypto.randomUUID(), title, done: false }
 }
 
+type TaskTimer = {
+  taskId: string
+  title: string
+  running: boolean
+  elapsedMs: number
+  startedAt: number | null
+}
+
+function formatElapsed(ms: number) {
+  const totalSeconds = Math.floor(Math.max(0, ms) / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const clock = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  return hours > 0 ? `${String(hours).padStart(2, "0")}:${clock}` : clock
+}
+
+function currentElapsed(timer: TaskTimer, now: number) {
+  if (!timer.running || timer.startedAt == null) return timer.elapsedMs
+  return timer.elapsedMs + (now - timer.startedAt)
+}
+
 export function GettingStarted() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [ready, setReady] = useState(false)
+  const [timer, setTimer] = useState<TaskTimer | null>(null)
   const focusId = useRef<string | null>(null)
 
   useEffect(() => {
@@ -176,10 +203,55 @@ export function GettingStarted() {
     setTodos((current) =>
       current.map((todo) => (todo.id === id ? { ...todo, ...patch } : todo))
     )
+    if (patch.title !== undefined) {
+      setTimer((current) =>
+        current?.taskId === id ? { ...current, title: patch.title } : current
+      )
+    }
   }
 
   function remove(id: string) {
     setTodos((current) => current.filter((todo) => todo.id !== id))
+    setTimer((current) => (current?.taskId === id ? null : current))
+  }
+
+  function startTimer(todo: Todo) {
+    const now = Date.now()
+    setTimer((current) => {
+      if (current?.taskId === todo.id) {
+        if (current.running) return current
+        return {
+          ...current,
+          title: todo.title,
+          running: true,
+          startedAt: now,
+        }
+      }
+      return {
+        taskId: todo.id,
+        title: todo.title || "Untitled task",
+        running: true,
+        elapsedMs: 0,
+        startedAt: now,
+      }
+    })
+  }
+
+  function pauseTimer() {
+    const now = Date.now()
+    setTimer((current) => {
+      if (!current?.running) return current
+      return {
+        ...current,
+        running: false,
+        elapsedMs: currentElapsed(current, now),
+        startedAt: null,
+      }
+    })
+  }
+
+  function stopTimer() {
+    setTimer(null)
   }
 
   function duplicate(id: string) {
@@ -295,6 +367,13 @@ export function GettingStarted() {
                         }
                         onEnter={() => addAfter(todo.id)}
                         onEmptyBackspace={() => remove(todo.id)}
+                        timerActive={timer?.taskId === todo.id}
+                        timerRunning={
+                          timer?.taskId === todo.id && timer.running
+                        }
+                        onStartTimer={() => startTimer(todo)}
+                        onPauseTimer={pauseTimer}
+                        onStopTimer={stopTimer}
                       />
                     </AnimatedListItem>
                   ))}
@@ -313,6 +392,89 @@ export function GettingStarted() {
           </button>
         </>
       )}
+
+      {timer ? (
+        <TaskTimerCard
+          timer={timer}
+          onStart={() => {
+            const todo = todos.find((item) => item.id === timer.taskId)
+            if (todo) startTimer(todo)
+          }}
+          onPause={pauseTimer}
+          onStop={stopTimer}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function TaskTimerCard({
+  timer,
+  onStart,
+  onPause,
+  onStop,
+}: {
+  timer: TaskTimer
+  onStart: () => void
+  onPause: () => void
+  onStop: () => void
+}) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    setNow(Date.now())
+    if (!timer.running) return
+    const id = window.setInterval(() => setNow(Date.now()), 250)
+    return () => window.clearInterval(id)
+  }, [timer.running, timer.startedAt])
+
+  const controlClass =
+    "inline-flex size-7 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
+
+  return (
+    <div className="pointer-events-auto fixed right-6 bottom-6 z-50 w-[240px] overflow-hidden rounded-[22px] bg-white/50 p-3 shadow-[0_8px_32px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-2xl backdrop-saturate-150 dark:bg-white/8 dark:shadow-[0_12px_40px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(255_255_255/0.45),transparent_42%)] dark:bg-[linear-gradient(180deg,rgb(255_255_255/0.08),transparent_50%)]"
+      />
+      <div className="relative">
+        <p className="truncate text-[13px] text-foreground/70">
+          {timer.title || "Untitled task"}
+        </p>
+        <p className="mt-1 font-mono text-[22px] leading-none tracking-tight tabular-nums text-foreground">
+          {formatElapsed(currentElapsed(timer, now))}
+        </p>
+        <div className="mt-2.5 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={timer.running ? onPause : onStart}
+            aria-label={timer.running ? "Pause timer" : "Play timer"}
+            className={controlClass}
+          >
+            {timer.running ? (
+              <Pause className="size-3.5" />
+            ) : (
+              <Play className="size-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onStart}
+            aria-label="Start timer"
+            className={controlClass}
+          >
+            <PlayCircle className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={onStop}
+            aria-label="Stop timer"
+            className={controlClass}
+          >
+            <Square className="size-3 fill-current" />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -374,6 +536,11 @@ function SortableTodo({
   onBackground,
   onEnter,
   onEmptyBackspace,
+  timerActive,
+  timerRunning,
+  onStartTimer,
+  onPauseTimer,
+  onStopTimer,
 }: {
   todo: Todo
   autoFocus: boolean
@@ -386,6 +553,11 @@ function SortableTodo({
   onBackground: (color: TaskColorId | undefined) => void
   onEnter: () => void
   onEmptyBackspace: () => void
+  timerActive: boolean
+  timerRunning: boolean
+  onStartTimer: () => void
+  onPauseTimer: () => void
+  onStopTimer: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const {
@@ -504,6 +676,33 @@ function SortableTodo({
               ]
         )}
       />
+      <button
+        type="button"
+        onClick={timerRunning ? onPauseTimer : onStartTimer}
+        aria-label={timerRunning ? "Pause timer" : "Play timer"}
+        className={cn(
+          "mt-1 rounded p-1 text-muted-foreground opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground",
+          timerActive && "opacity-100 text-foreground"
+        )}
+      >
+        {timerRunning ? (
+          <Pause className="size-3.5" />
+        ) : (
+          <Play className="size-3.5" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onStopTimer}
+        aria-label="Stop timer"
+        disabled={!timerActive}
+        className={cn(
+          "mt-1 rounded p-1 text-muted-foreground opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground disabled:pointer-events-none",
+          timerActive && "opacity-100"
+        )}
+      >
+        <Square className="size-3.5 fill-current" />
+      </button>
       <button
         type="button"
         onClick={onDelete}

@@ -99,6 +99,24 @@ test("reorders tasks with the keyboard drag", async () => {
   }
 })
 
+test("play starts a fixed timer and stop hides it", async () => {
+  const user = userEvent.setup()
+  render(<GettingStarted />)
+
+  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+
+  await user.click(screen.getAllByRole("button", { name: "Play timer" })[0]!)
+  expect(screen.getByRole("button", { name: "Start timer" })).toBeInTheDocument()
+  expect(screen.getByText(/\d{2}:\d{2}/)).toBeInTheDocument()
+
+  const pauseButtons = screen.getAllByRole("button", { name: "Pause timer" })
+  await user.click(pauseButtons[pauseButtons.length - 1]!)
+  expect(screen.getAllByRole("button", { name: "Play timer" }).length).toBeGreaterThan(0)
+
+  await user.click(screen.getAllByRole("button", { name: "Stop timer" })[0]!)
+  expect(screen.queryByRole("button", { name: "Start timer" })).not.toBeInTheDocument()
+})
+
 test("right-clicking the drag handle duplicates, recolors, and deletes", async () => {
   const user = userEvent.setup()
   render(<GettingStarted />)
