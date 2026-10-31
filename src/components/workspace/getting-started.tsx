@@ -33,7 +33,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type PointerEvent } from "react"
 
 import { AnimatedListItem } from "@/components/ui/animated-list"
 import {
@@ -164,10 +164,31 @@ function currentElapsed(timer: TaskTimer, now: number) {
   return timer.elapsedMs + (now - timer.startedAt)
 }
 
+type TimerCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
+
+const TIMER_CORNER_CLASS: Record<TimerCorner, string> = {
+  "top-left": "top-6 left-6",
+  "top-right": "top-6 right-6",
+  "bottom-left": "bottom-6 left-6",
+  "bottom-right": "bottom-6 right-6",
+}
+
+function nearestTimerCorner(x: number, y: number, width: number, height: number) {
+  const centerX = x + width / 2
+  const centerY = y + height / 2
+  const left = centerX < window.innerWidth / 2
+  const top = centerY < window.innerHeight / 2
+  if (top && left) return "top-left"
+  if (top) return "top-right"
+  if (left) return "bottom-left"
+  return "bottom-right"
+}
+
 export function GettingStarted() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [ready, setReady] = useState(false)
   const [timer, setTimer] = useState<TaskTimer | null>(null)
+  const [timerCorner, setTimerCorner] = useState<TimerCorner>("bottom-right")
   const focusId = useRef<string | null>(null)
 
   useEffect(() => {
@@ -396,6 +417,8 @@ export function GettingStarted() {
       {timer ? (
         <TaskTimerCard
           timer={timer}
+          corner={timerCorner}
+          onCornerChange={setTimerCorner}
           onStart={() => {
             const todo = todos.find((item) => item.id === timer.taskId)
             if (todo) startTimer(todo)
@@ -410,16 +433,29 @@ export function GettingStarted() {
 
 function TaskTimerCard({
   timer,
+  corner,
+  onCornerChange,
   onStart,
   onPause,
   onStop,
 }: {
   timer: TaskTimer
+  corner: TimerCorner
+  onCornerChange: (corner: TimerCorner) => void
   onStart: () => void
   onPause: () => void
   onStop: () => void
 }) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const dragOffset = useRef({ x: 0, y: 0 })
+  const dragging = useRef(false)
   const [now, setNow] = useState(() => Date.now())
+  const [drag, setDrag] = useState<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
 
   useEffect(() => {
     setNow(Date.now())
@@ -428,11 +464,76 @@ function TaskTimerCard({
     return () => window.clearInterval(id)
   }, [timer.running, timer.startedAt])
 
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return
+    if ((event.target as HTMLElement).closest("button")) return
+    const rect = cardRef.current?.getBoundingClientRect()
+    if (!rect) return
+    dragging.current = true
+    dragOffset.current = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    }
+    setDrag({
+      x: rect.left,
+      y: rect.top,
+      width: rect.width,
+      height: rect.height,
+    })
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!dragging.current) return
+    setDrag((current) =>
+      current
+        ? {
+            ...current,
+            x: event.clientX - dragOffset.current.x,
+            y: event.clientY - dragOffset.current.y,
+          }
+        : current
+    )
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (!dragging.current) return
+    dragging.current = false
+    const width = drag?.width ?? cardRef.current?.offsetWidth ?? 0
+    const height = drag?.height ?? cardRef.current?.offsetHeight ?? 0
+    onCornerChange(
+      nearestTimerCorner(
+        event.clientX - dragOffset.current.x,
+        event.clientY - dragOffset.current.y,
+        width,
+        height
+      )
+    )
+    setDrag(null)
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+  }
+
   const controlClass =
     "inline-flex size-7 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-white/50 hover:text-foreground dark:hover:bg-white/10"
 
   return (
-    <div className="pointer-events-auto fixed right-6 bottom-6 z-50 w-[240px] overflow-hidden rounded-[22px] bg-white/50 p-3 shadow-[0_8px_32px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-2xl backdrop-saturate-150 dark:bg-white/8 dark:shadow-[0_12px_40px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]">
+    <div
+      ref={cardRef}
+      data-corner={corner}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      style={
+        drag
+          ? { top: drag.y, left: drag.x, right: "auto", bottom: "auto" }
+          : undefined
+      }
+      className={cn(
+        "pointer-events-auto fixed z-50 w-[240px] cursor-grab overflow-hidden rounded-[22px] bg-white/50 p-3 shadow-[0_8px_32px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-2xl backdrop-saturate-150 select-none dark:bg-white/8 dark:shadow-[0_12px_40px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]",
+        drag ? "cursor-grabbing" : TIMER_CORNER_CLASS[corner]
+      )}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(255_255_255/0.45),transparent_42%)] dark:bg-[linear-gradient(180deg,rgb(255_255_255/0.08),transparent_50%)]"

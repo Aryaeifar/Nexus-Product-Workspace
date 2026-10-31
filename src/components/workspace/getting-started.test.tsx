@@ -117,6 +117,38 @@ test("play starts a fixed timer and stop hides it", async () => {
   expect(screen.queryByRole("button", { name: "Start timer" })).not.toBeInTheDocument()
 })
 
+test("timer card snaps to the nearest corner after a drag", async () => {
+  const user = userEvent.setup()
+  render(<GettingStarted />)
+
+  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+  await user.click(screen.getAllByRole("button", { name: "Play timer" })[0]!)
+
+  const card = document.querySelector("[data-corner]")
+  expect(card).toHaveAttribute("data-corner", "bottom-right")
+  if (!(card instanceof HTMLElement)) throw new Error("Missing timer card")
+
+  Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true })
+  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true })
+  card.getBoundingClientRect = () =>
+    DOMRect.fromRect({ x: 736, y: 672, width: 240, height: 104 })
+
+  fireEvent.pointerDown(card, { button: 0, clientX: 800, clientY: 720 })
+  fireEvent.pointerMove(card, { clientX: 80, clientY: 60 })
+  fireEvent.pointerUp(card, { clientX: 80, clientY: 60 })
+
+  expect(card).toHaveAttribute("data-corner", "top-left")
+
+  card.getBoundingClientRect = () =>
+    DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 104 })
+
+  fireEvent.pointerDown(card, { button: 0, clientX: 80, clientY: 60 })
+  fireEvent.pointerMove(card, { clientX: 920, clientY: 40 })
+  fireEvent.pointerUp(card, { clientX: 920, clientY: 40 })
+
+  expect(card).toHaveAttribute("data-corner", "top-right")
+})
+
 test("right-clicking the drag handle duplicates, recolors, and deletes", async () => {
   const user = userEvent.setup()
   render(<GettingStarted />)
