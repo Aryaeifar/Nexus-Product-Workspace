@@ -260,7 +260,7 @@ test("task modal saves status, description, and labels", async () => {
 
   await user.click(await screen.findByRole("button", { name: "Open First" }))
   await user.type(screen.getByPlaceholderText("Add a description…"), "Ship notes")
-  await user.selectOptions(screen.getByLabelText("Status"), "in_progress")
+  await user.click(screen.getByRole("radio", { name: "In Progress" }))
   await user.click(screen.getByRole("button", { name: "Launch" }))
   await user.click(screen.getByRole("button", { name: "Close" }))
 

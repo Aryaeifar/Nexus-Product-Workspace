@@ -11,9 +11,11 @@ import {
   Timer,
   UserRound,
 } from "lucide-react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useState, type ReactNode } from "react"
 
 import { Modal } from "@/components/ui/modal"
+import { appleDuration, appleEase } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 export const TASK_STATUSES = [
@@ -85,6 +87,7 @@ export function TaskDetailModal({
   onChange: (patch: Partial<TaskDetails>) => void
   onResetTime: () => void
 }) {
+  const reduced = useReducedMotion()
   const [labelDraft, setLabelDraft] = useState("")
   const [subtaskDraft, setSubtaskDraft] = useState("")
   const heading = task.title.trim() || "Untitled"
@@ -111,54 +114,76 @@ export function TaskDetailModal({
       title={heading}
       description="Task details"
     >
-      <input
-        value={task.title}
-        onChange={(event) => onChange({ title: event.target.value })}
-        placeholder="Task title"
-        className="w-full bg-transparent text-[28px] leading-[1.2] font-semibold tracking-[-0.5px] text-foreground outline-none placeholder:text-muted-foreground/50"
-      />
-      <textarea
-        value={task.description}
-        onChange={(event) => onChange({ description: event.target.value })}
-        placeholder="Add a description…"
-        rows={3}
-        className="mt-3 w-full resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-muted-foreground/60"
-      />
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: appleDuration.ui, ease: appleEase }}
+      >
+        <input
+          value={task.title}
+          onChange={(event) => onChange({ title: event.target.value })}
+          placeholder="Task title"
+          className="w-full bg-transparent text-[30px] leading-[1.15] font-semibold tracking-[-0.6px] text-foreground outline-none placeholder:text-muted-foreground/45"
+        />
+        <textarea
+          value={task.description}
+          onChange={(event) => onChange({ description: event.target.value })}
+          placeholder="Add a description…"
+          rows={3}
+          className="mt-3 w-full resize-none rounded-xl bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-muted-foreground/55 transition-colors focus:bg-black/[0.02] dark:focus:bg-white/[0.03]"
+        />
+      </motion.div>
 
-      <div className="mt-6 space-y-0.5">
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: appleDuration.ui,
+          delay: reduced ? 0 : 0.06,
+          ease: appleEase,
+        }}
+        className="mt-6 rounded-2xl bg-black/[0.03] p-2 dark:bg-white/[0.04]"
+      >
         <PropertyRow icon={<CircleDot className="size-3.5" />} label="Status">
-          <select
+          <div
+            role="radiogroup"
             aria-label="Status"
-            value={task.status}
-            onChange={(event) => {
-              const status = event.target.value as TaskStatus
-              onChange({ status, done: status === "done" })
-            }}
-            className={fieldClass}
+            className="flex flex-wrap gap-1"
           >
             {TASK_STATUSES.map((status) => (
-              <option key={status.id} value={status.id}>
+              <ChoiceChip
+                key={status.id}
+                pressed={task.status === status.id}
+                onClick={() =>
+                  onChange({
+                    status: status.id,
+                    done: status.id === "done",
+                  })
+                }
+              >
                 {status.label}
-              </option>
+              </ChoiceChip>
             ))}
-          </select>
+          </div>
         </PropertyRow>
 
         <PropertyRow icon={<Flag className="size-3.5" />} label="Priority">
-          <select
+          <div
+            role="radiogroup"
             aria-label="Priority"
-            value={task.priority}
-            onChange={(event) =>
-              onChange({ priority: event.target.value as TaskPriority })
-            }
-            className={fieldClass}
+            className="flex flex-wrap gap-1"
           >
             {TASK_PRIORITIES.map((priority) => (
-              <option key={priority.id} value={priority.id}>
+              <ChoiceChip
+                key={priority.id}
+                pressed={task.priority === priority.id}
+                onClick={() => onChange({ priority: priority.id })}
+              >
+                <span className={cn("size-1.5 rounded-full", priority.swatch)} />
                 {priority.label}
-              </option>
+              </ChoiceChip>
             ))}
-          </select>
+          </div>
         </PropertyRow>
 
         <PropertyRow icon={<UserRound className="size-3.5" />} label="Assignee">
@@ -201,7 +226,7 @@ export function TaskDetailModal({
 
         <PropertyRow icon={<Clock3 className="size-3.5" />} label="Tracked">
           <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <p className="px-1.5 font-mono text-[14px] tabular-nums text-foreground">
+            <p className="px-2 font-mono text-[14px] tabular-nums text-foreground">
               {formatTaskTime(elapsedMs)}
             </p>
             <button
@@ -209,7 +234,7 @@ export function TaskDetailModal({
               onClick={onResetTime}
               disabled={elapsedMs <= 0}
               aria-label="Reset time"
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-muted-foreground hover:bg-black/4 hover:text-foreground disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-white/6"
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] text-muted-foreground transition-all duration-200 hover:bg-black/5 hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-white/8"
             >
               <RotateCcw className="size-3.5" />
               Reset
@@ -220,20 +245,27 @@ export function TaskDetailModal({
         <PropertyRow icon={<Tag className="size-3.5" />} label="Labels">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap gap-1.5">
-              {task.labels.map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() =>
-                    onChange({
-                      labels: task.labels.filter((item) => item !== label),
-                    })
-                  }
-                  className="rounded-full bg-black/5 px-2 py-0.5 text-[12px] text-foreground hover:bg-black/8 dark:bg-white/8 dark:hover:bg-white/12"
-                >
-                  {label}
-                </button>
-              ))}
+              <AnimatePresence initial={false}>
+                {task.labels.map((label) => (
+                  <motion.button
+                    key={label}
+                    type="button"
+                    layout
+                    initial={reduced ? false : { opacity: 0, scale: 0.86 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.86 }}
+                    transition={{ duration: 0.2, ease: appleEase }}
+                    onClick={() =>
+                      onChange({
+                        labels: task.labels.filter((item) => item !== label),
+                      })
+                    }
+                    className="rounded-full bg-foreground/8 px-2.5 py-1 text-[12px] text-foreground transition-colors hover:bg-foreground/12"
+                  >
+                    {label}
+                  </motion.button>
+                ))}
+              </AnimatePresence>
               <input
                 value={labelDraft}
                 onChange={(event) => setLabelDraft(event.target.value)}
@@ -245,17 +277,17 @@ export function TaskDetailModal({
                 }}
                 placeholder="Add label"
                 aria-label="Add label"
-                className="min-w-[88px] flex-1 bg-transparent px-1.5 py-1 text-[14px] outline-none placeholder:text-muted-foreground/60"
+                className="min-w-[88px] flex-1 bg-transparent px-2 py-1 text-[14px] outline-none placeholder:text-muted-foreground/60"
               />
             </div>
-            <div className="mt-1.5 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1">
               {TASK_LABELS.filter((label) => !task.labels.includes(label)).map(
                 (label) => (
                   <button
                     key={label}
                     type="button"
                     onClick={() => addLabel(label)}
-                    className="rounded-full px-2 py-0.5 text-[12px] text-muted-foreground hover:bg-black/4 hover:text-foreground dark:hover:bg-white/6"
+                    className="rounded-full px-2.5 py-1 text-[12px] text-muted-foreground transition-all duration-200 hover:bg-black/5 hover:text-foreground active:scale-95 dark:hover:bg-white/8"
                   >
                     {label}
                   </button>
@@ -264,10 +296,19 @@ export function TaskDetailModal({
             </div>
           </div>
         </PropertyRow>
-      </div>
+      </motion.div>
 
-      <div className="mt-8">
-        <div className="flex items-center justify-between">
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: appleDuration.ui,
+          delay: reduced ? 0 : 0.12,
+          ease: appleEase,
+        }}
+        className="mt-6"
+      >
+        <div className="flex items-center justify-between px-1">
           <p className="text-[13px] text-muted-foreground">Checklist</p>
           {task.subtasks.length > 0 ? (
             <p className="text-[12px] text-muted-foreground">
@@ -276,59 +317,71 @@ export function TaskDetailModal({
           ) : null}
         </div>
         <div className="mt-2 space-y-1">
-          {task.subtasks.map((item) => (
-            <div key={item.id} className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({
-                    subtasks: task.subtasks.map((subtask) =>
-                      subtask.id === item.id
-                        ? { ...subtask, done: !subtask.done }
-                        : subtask
-                    ),
-                  })
-                }
-                aria-label={
-                  item.done ? "Mark subtask incomplete" : "Mark subtask complete"
-                }
-                className={cn(
-                  "flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-foreground",
-                  item.done && "bg-foreground text-background"
-                )}
+          <AnimatePresence initial={false}>
+            {task.subtasks.map((item) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={reduced ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: appleEase }}
+                className="flex items-center gap-2 rounded-xl px-1.5 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
               >
-                {item.done ? (
-                  <svg viewBox="0 0 12 12" className="size-3" aria-hidden>
-                    <path
-                      d="M2.5 6.2 5 8.6 9.5 3.4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : null}
-              </button>
-              <input
-                value={item.title}
-                onChange={(event) =>
-                  onChange({
-                    subtasks: task.subtasks.map((subtask) =>
-                      subtask.id === item.id
-                        ? { ...subtask, title: event.target.value }
-                        : subtask
-                    ),
-                  })
-                }
-                className={cn(
-                  "min-w-0 flex-1 bg-transparent py-1 text-[14px] outline-none",
-                  item.done && "text-muted-foreground line-through"
-                )}
-              />
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      subtasks: task.subtasks.map((subtask) =>
+                        subtask.id === item.id
+                          ? { ...subtask, done: !subtask.done }
+                          : subtask
+                      ),
+                    })
+                  }
+                  aria-label={
+                    item.done
+                      ? "Mark subtask incomplete"
+                      : "Mark subtask complete"
+                  }
+                  className={cn(
+                    "flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-foreground transition-colors",
+                    item.done && "bg-foreground text-background"
+                  )}
+                >
+                  {item.done ? (
+                    <svg viewBox="0 0 12 12" className="size-3" aria-hidden>
+                      <path
+                        d="M2.5 6.2 5 8.6 9.5 3.4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : null}
+                </button>
+                <input
+                  value={item.title}
+                  onChange={(event) =>
+                    onChange({
+                      subtasks: task.subtasks.map((subtask) =>
+                        subtask.id === item.id
+                          ? { ...subtask, title: event.target.value }
+                          : subtask
+                      ),
+                    })
+                  }
+                  className={cn(
+                    "min-w-0 flex-1 bg-transparent py-2 text-[14px] outline-none transition-colors",
+                    item.done && "text-muted-foreground line-through"
+                  )}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div className="flex items-center gap-2 rounded-xl px-1.5">
             <Plus className="size-3.5 text-muted-foreground" />
             <input
               value={subtaskDraft}
@@ -341,13 +394,13 @@ export function TaskDetailModal({
               }}
               placeholder="Add a subtask"
               aria-label="Add a subtask"
-              className="min-w-0 flex-1 bg-transparent py-1 text-[14px] outline-none placeholder:text-muted-foreground/60"
+              className="min-w-0 flex-1 bg-transparent py-2 text-[14px] outline-none placeholder:text-muted-foreground/60"
             />
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <p className="mt-8 text-[12px] text-muted-foreground">
+      <p className="mt-7 px-1 text-[12px] text-muted-foreground">
         Created {formatCreated(task.createdAt)}
       </p>
     </Modal>
@@ -355,7 +408,34 @@ export function TaskDetailModal({
 }
 
 const fieldClass =
-  "h-8 w-full rounded-md bg-transparent px-1.5 text-[14px] text-foreground outline-none hover:bg-black/4 dark:hover:bg-white/6"
+  "h-9 w-full rounded-xl bg-transparent px-2 text-[14px] text-foreground outline-none transition-colors hover:bg-black/[0.03] focus:bg-black/[0.04] dark:hover:bg-white/[0.05] dark:focus:bg-white/[0.06]"
+
+function ChoiceChip({
+  pressed,
+  onClick,
+  children,
+}: {
+  pressed: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={pressed}
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] transition-all duration-200 active:scale-95",
+        pressed
+          ? "bg-foreground text-background shadow-sm"
+          : "text-muted-foreground hover:bg-black/5 hover:text-foreground dark:hover:bg-white/8"
+      )}
+    >
+      {children}
+    </button>
+  )
+}
 
 function PropertyRow({
   icon,
@@ -367,8 +447,8 @@ function PropertyRow({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-start gap-4 py-1">
-      <p className="mt-1.5 flex w-28 shrink-0 items-center gap-2 text-[13px] text-muted-foreground">
+    <div className="flex items-start gap-4 rounded-xl px-2 py-2">
+      <p className="mt-1.5 flex w-24 shrink-0 items-center gap-2 text-[13px] text-muted-foreground">
         {icon}
         {label}
       </p>
