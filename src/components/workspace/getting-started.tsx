@@ -33,7 +33,14 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react"
 
 import { AnimatedListItem } from "@/components/ui/animated-list"
 import {
@@ -270,9 +277,10 @@ export function GettingStarted() {
   const [timer, setTimer] = useState<TaskTimer | null>(null)
   const [timerCorner, setTimerCorner] = useState<TimerCorner>("bottom-right")
   const [openTaskId, setOpenTaskId] = useState<string | null>(null)
-  const [clock, setClock] = useState(() => Date.now())
+  const [modalMounted, setModalMounted] = useState(false)
   const todosRef = useRef(todos)
   const timerRef = useRef(timer)
+  const lastOpenTaskRef = useRef<Todo | null>(null)
   todosRef.current = todos
   timerRef.current = timer
 
@@ -301,15 +309,24 @@ export function GettingStarted() {
   }, [ready, todos])
 
   useEffect(() => {
-    if (!timer?.running) return
-    const id = window.setInterval(() => {
-      const now = Date.now()
-      setClock(now)
+    function flushRunningTimer() {
       const current = timerRef.current
-      if (current?.running) persistElapsed(current.taskId, currentElapsed(current, now))
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [timer?.running])
+      if (!current?.running) return
+      persistElapsed(current.taskId, currentElapsed(current, Date.now()))
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "hidden") flushRunningTimer()
+    }
+
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("pagehide", flushRunningTimer)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("pagehide", flushRunningTimer)
+      flushRunningTimer()
+    }
+  }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -434,6 +451,12 @@ export function GettingStarted() {
   }
 
   const openTask = todos.find((todo) => todo.id === openTaskId) ?? null
+  if (openTask) lastOpenTaskRef.current = openTask
+  const modalTask = openTask ?? lastOpenTaskRef.current
+
+  useEffect(() => {
+    if (openTaskId) setModalMounted(true)
+  }, [openTaskId])
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -466,6 +489,7 @@ export function GettingStarted() {
         <TypingAnimation
           words={EXAMPLES}
           loop
+          paused={openTaskId != null}
           startOnView={false}
           typeSpeed={48}
           deleteSpeed={28}
@@ -563,20 +587,30 @@ export function GettingStarted() {
         />
       ) : null}
 
-      {openTask ? (
+      {modalMounted && modalTask ? (
         <TaskDetailModal
-          open
-          task={openTask}
+          open={openTaskId != null}
+          task={modalTask}
           elapsedMs={
-            timer?.taskId === openTask.id
-              ? currentElapsed(timer, clock)
-              : openTask.elapsedMs
+            timer?.taskId === modalTask.id
+              ? timer.elapsedMs
+              : modalTask.elapsedMs
+          }
+          running={timer?.taskId === modalTask.id && timer.running}
+          startedAt={
+            timer?.taskId === modalTask.id ? timer.startedAt : null
           }
           onOpenChange={(open) => {
             if (!open) setOpenTaskId(null)
           }}
-          onChange={(patch) => update(openTask.id, patch)}
-          onResetTime={() => resetTaskTime(openTask.id)}
+          onOpenChangeComplete={(open) => {
+            if (!open) {
+              setModalMounted(false)
+              lastOpenTaskRef.current = null
+            }
+          }}
+          onChange={(patch) => update(modalTask.id, patch)}
+          onResetTime={() => resetTaskTime(modalTask.id)}
         />
       ) : null}
     </div>
@@ -650,7 +684,7 @@ function TaskTimerCard({
   useEffect(() => {
     setNow(Date.now())
     if (!timer.running) return
-    const id = window.setInterval(() => setNow(Date.now()), 250)
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [timer.running, timer.startedAt])
 
@@ -708,7 +742,7 @@ function TaskTimerCard({
       onPointerCancel={onPointerUp}
       style={{ top: y, left: x }}
       className={cn(
-        "pointer-events-auto fixed z-50 w-[240px] cursor-grab overflow-hidden rounded-[22px] bg-white/50 p-3 shadow-[0_8px_32px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-2xl backdrop-saturate-150 select-none dark:bg-white/8 dark:shadow-[0_12px_40px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]",
+        "pointer-events-auto fixed z-50 w-[240px] cursor-grab overflow-hidden rounded-[22px] bg-white/60 p-3 shadow-[0_8px_24px_rgb(0_0_0/0.1),inset_0_1px_0_rgb(255_255_255/0.55)] backdrop-blur-md select-none dark:bg-white/10 dark:shadow-[0_12px_28px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.12)]",
         draggingCard && "cursor-grabbing"
       )}
     >
@@ -803,7 +837,7 @@ function ColorMenu({
   )
 }
 
-function SortableTodo({
+const SortableTodo = memo(function SortableTodo({
   todo,
   onOpen,
   onToggle,
@@ -988,4 +1022,4 @@ function SortableTodo({
       </button>
     </div>
   )
-}
+})

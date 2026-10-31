@@ -262,6 +262,8 @@ test("task modal saves status, description, and labels", async () => {
   await user.type(screen.getByPlaceholderText("Add a description…"), "Ship notes")
   await user.click(screen.getByRole("radio", { name: "In Progress" }))
   await user.click(screen.getByRole("button", { name: "Launch" }))
+  await user.click(screen.getByRole("button", { name: "Add a subtask" }))
+  await user.type(screen.getByPlaceholderText("Write anything"), "Write copy")
   await user.click(screen.getByRole("button", { name: "Close" }))
 
   await waitFor(() => {
@@ -269,11 +271,13 @@ test("task modal saves status, description, and labels", async () => {
       description?: string
       status?: string
       labels?: string[]
+      subtasks?: { title: string }[]
     }[]
     expect(stored[0]).toMatchObject({
       description: "Ship notes",
       status: "in_progress",
       labels: ["Launch"],
     })
+    expect(stored[0]?.subtasks?.map((item) => item.title)).toEqual(["Write copy"])
   })
 })

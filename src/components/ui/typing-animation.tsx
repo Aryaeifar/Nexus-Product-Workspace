@@ -54,6 +54,7 @@ interface TypingAnimationProps extends Omit<MotionProps, "children"> {
   loop?: boolean
   as?: MotionElementType
   startOnView?: boolean
+  paused?: boolean
   showCursor?: boolean
   blinkCursor?: boolean
   cursorStyle?: "line" | "block" | "underscore"
@@ -71,6 +72,7 @@ export function TypingAnimation({
   loop = false,
   as: Component = "span",
   startOnView = true,
+  paused = false,
   showCursor = true,
   blinkCursor = true,
   cursorStyle = "line",
@@ -115,7 +117,7 @@ export function TypingAnimation({
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | null = null
 
-    if (shouldStart && wordsToAnimate.length > 0) {
+    if (shouldStart && !paused && wordsToAnimate.length > 0) {
       const timeoutDelay =
         delay > 0 && displayedText === ""
           ? delay
@@ -174,6 +176,7 @@ export function TypingAnimation({
     }
   }, [
     shouldStart,
+    paused,
     phase,
     currentCharIndex,
     currentWordIndex,

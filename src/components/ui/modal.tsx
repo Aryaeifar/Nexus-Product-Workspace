@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 export function Modal({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   title,
   description,
   children,
@@ -16,35 +17,33 @@ export function Modal({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onOpenChangeComplete?: (open: boolean) => void
   title: string
   description?: string
   children: ReactNode
   className?: string
 }) {
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[70] bg-black/25 backdrop-blur-[24px] backdrop-saturate-150 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] data-closed:opacity-0 data-closed:backdrop-blur-none dark:bg-black/45" />
-        <Dialog.Viewport className="fixed inset-0 z-[70] grid place-items-center p-4 sm:p-6">
+        <Dialog.Backdrop className="fixed inset-0 z-[70] bg-black/36 backdrop-blur-[3px] transition-opacity duration-200 ease-out data-starting-style:opacity-0 data-ending-style:opacity-0 dark:bg-black/56" />
+        <Dialog.Viewport className="fixed inset-0 z-[70] grid place-items-center p-3 sm:p-5">
           <Dialog.Popup
             className={cn(
-              "relative flex max-h-[min(860px,calc(100vh-2rem))] w-full max-w-[680px] flex-col overflow-hidden rounded-[22px] bg-background/92 outline-none backdrop-blur-xl",
-              "shadow-[0_0_0_1px_rgb(15_15_15/0.06),0_24px_80px_rgb(15_15_15/0.16)] dark:bg-background/80 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_28px_90px_rgb(0_0_0/0.55)]",
-              "origin-center duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.97] data-open:slide-in-from-bottom-3 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.98] data-closed:slide-out-to-bottom-2",
+              "relative flex max-h-[min(840px,calc(100vh-2rem))] w-full max-w-[920px] flex-col overflow-hidden rounded-[24px] bg-background outline-none",
+              "shadow-[0_0_0_1px_rgb(15_15_15/0.05),0_16px_40px_rgb(15_15_15/0.12)] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.07),0_16px_48px_rgb(0_0_0/0.4)]",
+              "origin-center transform-gpu transition-[opacity,transform] duration-200 ease-out will-change-[opacity,transform] data-starting-style:translate-y-2 data-starting-style:scale-[0.985] data-starting-style:opacity-0 data-ending-style:translate-y-2 data-ending-style:scale-[0.985] data-ending-style:opacity-0",
               className
             )}
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgb(255_255_255/0.38),transparent)] dark:bg-[linear-gradient(180deg,rgb(255_255_255/0.06),transparent)]"
-            />
-            <div className="relative flex items-center justify-between px-5 pt-4 pb-2">
-              <p className="text-[12px] tracking-[0.04em] text-muted-foreground uppercase">
-                Task
-              </p>
+            <div className="flex h-12 shrink-0 items-center justify-end px-4">
               <Dialog.Close
                 aria-label="Close"
-                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-black/5 hover:text-foreground active:scale-95 dark:hover:bg-white/8"
+                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-black/6 hover:text-foreground dark:hover:bg-white/8"
               >
                 <X className="size-4" />
               </Dialog.Close>
@@ -55,9 +54,7 @@ export function Modal({
                 {description}
               </Dialog.Description>
             ) : null}
-            <div className="relative min-h-0 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
-              {children}
-            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
           </Dialog.Popup>
         </Dialog.Viewport>
       </Dialog.Portal>
