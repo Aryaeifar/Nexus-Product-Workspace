@@ -51,6 +51,14 @@ import {
 import { EmptyState } from "@/components/ui/empty-state"
 import { Highlighter } from "@/components/ui/highlighter"
 import { TypingAnimation } from "@/components/ui/typing-animation"
+import {
+  TASK_PRIORITIES,
+  TaskDetailModal,
+  isTaskPriority,
+  isTaskStatus,
+  type TaskDetails,
+  type TaskSubtask,
+} from "@/components/workspace/task-detail-modal"
 import { cn } from "@/lib/utils"
 
 const TASK_COLORS = [
@@ -100,10 +108,7 @@ const TASK_COLORS = [
 
 type TaskColorId = (typeof TASK_COLORS)[number]["id"]
 
-type Todo = {
-  id: string
-  title: string
-  done: boolean
+type Todo = TaskDetails & {
   color?: TaskColorId
   background?: TaskColorId
 }
@@ -120,12 +125,53 @@ function normalizeTodo(value: unknown): Todo | null {
   if (!value || typeof value !== "object") return null
   const todo = value as Record<string, unknown>
   if (typeof todo.id !== "string" || typeof todo.title !== "string") return null
+  const status = isTaskStatus(todo.status)
+    ? todo.status
+    : todo.done === true
+      ? "done"
+      : "todo"
   return {
     id: todo.id,
     title: todo.title,
-    done: todo.done === true,
+    done: status === "done" || todo.done === true,
+    elapsedMs:
+      typeof todo.elapsedMs === "number" && todo.elapsedMs > 0
+        ? todo.elapsedMs
+        : 0,
+    status,
+    priority: isTaskPriority(todo.priority) ? todo.priority : "none",
+    description: typeof todo.description === "string" ? todo.description : "",
+    assignee: typeof todo.assignee === "string" ? todo.assignee : "",
+    dueDate: typeof todo.dueDate === "string" ? todo.dueDate : "",
+    estimate:
+      typeof todo.estimate === "number" && Number.isFinite(todo.estimate)
+        ? todo.estimate
+        : null,
+    labels: Array.isArray(todo.labels)
+      ? todo.labels.filter((label): label is string => typeof label === "string")
+      : [],
+    subtasks: Array.isArray(todo.subtasks)
+      ? todo.subtasks.flatMap((item) => {
+          const subtask = normalizeSubtask(item)
+          return subtask ? [subtask] : []
+        })
+      : [],
+    createdAt: typeof todo.createdAt === "number" ? todo.createdAt : 0,
     color: isTaskColor(todo.color) ? todo.color : undefined,
     background: isTaskColor(todo.background) ? todo.background : undefined,
+  }
+}
+
+function normalizeSubtask(value: unknown): TaskSubtask | null {
+  if (!value || typeof value !== "object") return null
+  const subtask = value as Record<string, unknown>
+  if (typeof subtask.id !== "string" || typeof subtask.title !== "string") {
+    return null
+  }
+  return {
+    id: subtask.id,
+    title: subtask.title,
+    done: subtask.done === true,
   }
 }
 
@@ -139,7 +185,21 @@ const EXAMPLES = [
 ]
 
 function createTodo(title = ""): Todo {
-  return { id: crypto.randomUUID(), title, done: false }
+  return {
+    id: crypto.randomUUID(),
+    title,
+    done: false,
+    elapsedMs: 0,
+    status: "todo",
+    priority: "none",
+    description: "",
+    assignee: "",
+    dueDate: "",
+    estimate: null,
+    labels: [],
+    subtasks: [],
+    createdAt: Date.now(),
+  }
 }
 
 type TaskTimer = {
@@ -209,7 +269,12 @@ export function GettingStarted() {
   const [ready, setReady] = useState(false)
   const [timer, setTimer] = useState<TaskTimer | null>(null)
   const [timerCorner, setTimerCorner] = useState<TimerCorner>("bottom-right")
-  const focusId = useRef<string | null>(null)
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null)
+  const [clock, setClock] = useState(() => Date.now())
+  const todosRef = useRef(todos)
+  const timerRef = useRef(timer)
+  todosRef.current = todos
+  timerRef.current = timer
 
   useEffect(() => {
     try {
@@ -235,10 +300,31 @@ export function GettingStarted() {
     if (ready) localStorage.setItem(STORAGE_KEY, JSON.stringify(todos))
   }, [ready, todos])
 
+  useEffect(() => {
+    if (!timer?.running) return
+    const id = window.setInterval(() => {
+      const now = Date.now()
+      setClock(now)
+      const current = timerRef.current
+      if (current?.running) persistElapsed(current.taskId, currentElapsed(current, now))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [timer?.running])
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
+
+  function persistElapsed(id: string, elapsedMs: number) {
+    setTodos((current) =>
+      current.map((todo) =>
+        todo.id === id && todo.elapsedMs !== elapsedMs
+          ? { ...todo, elapsedMs }
+          : todo
+      )
+    )
+  }
 
   function update(id: string, patch: Partial<Todo>) {
     setTodos((current) =>
@@ -255,45 +341,65 @@ export function GettingStarted() {
   function remove(id: string) {
     setTodos((current) => current.filter((todo) => todo.id !== id))
     setTimer((current) => (current?.taskId === id ? null : current))
+    setOpenTaskId((current) => (current === id ? null : current))
   }
 
   function startTimer(todo: Todo) {
     const now = Date.now()
-    setTimer((current) => {
-      if (current?.taskId === todo.id) {
-        if (current.running) return current
+    const current = timerRef.current
+    if (current && current.taskId !== todo.id) {
+      persistElapsed(current.taskId, currentElapsed(current, now))
+    }
+    const latest = todosRef.current.find((item) => item.id === todo.id) ?? todo
+    setTimer((active) => {
+      if (active?.taskId === latest.id) {
+        if (active.running) return active
         return {
-          ...current,
-          title: todo.title,
+          ...active,
+          title: latest.title,
           running: true,
           startedAt: now,
         }
       }
       return {
-        taskId: todo.id,
-        title: todo.title || "Untitled task",
+        taskId: latest.id,
+        title: latest.title || "Untitled task",
         running: true,
-        elapsedMs: 0,
+        elapsedMs: latest.elapsedMs,
         startedAt: now,
       }
     })
   }
 
   function pauseTimer() {
-    const now = Date.now()
-    setTimer((current) => {
-      if (!current?.running) return current
-      return {
-        ...current,
-        running: false,
-        elapsedMs: currentElapsed(current, now),
-        startedAt: null,
-      }
+    const current = timerRef.current
+    if (!current?.running) return
+    const elapsedMs = currentElapsed(current, Date.now())
+    persistElapsed(current.taskId, elapsedMs)
+    setTimer({
+      ...current,
+      running: false,
+      elapsedMs,
+      startedAt: null,
     })
   }
 
   function stopTimer() {
+    const current = timerRef.current
+    if (current) persistElapsed(current.taskId, currentElapsed(current, Date.now()))
     setTimer(null)
+  }
+
+  function resetTaskTime(id: string) {
+    persistElapsed(id, 0)
+    setTimer((current) => {
+      if (current?.taskId !== id) return current
+      return {
+        ...current,
+        elapsedMs: 0,
+        startedAt: current.running ? Date.now() : null,
+      }
+    })
   }
 
   function duplicate(id: string) {
@@ -302,14 +408,22 @@ export function GettingStarted() {
       const source = current[index]
       if (!source) return current
       const copy = [...current]
-      copy.splice(index + 1, 0, { ...source, id: crypto.randomUUID() })
+      copy.splice(index + 1, 0, {
+        ...source,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        subtasks: source.subtasks.map((item) => ({
+          ...item,
+          id: crypto.randomUUID(),
+        })),
+      })
       return copy
     })
   }
 
   function addAfter(id?: string) {
     const next = createTodo()
-    focusId.current = next.id
+    setOpenTaskId(next.id)
     setTodos((current) => {
       if (!id) return [...current, next]
       const index = current.findIndex((todo) => todo.id === id)
@@ -318,6 +432,8 @@ export function GettingStarted() {
       return copy
     })
   }
+
+  const openTask = todos.find((todo) => todo.id === openTaskId) ?? null
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -394,21 +510,19 @@ export function GettingStarted() {
                     <AnimatedListItem key={todo.id}>
                       <SortableTodo
                         todo={todo}
-                        autoFocus={focusId.current === todo.id}
-                        onFocused={() => {
-                          if (focusId.current === todo.id)
-                            focusId.current = null
-                        }}
-                        onChange={(title) => update(todo.id, { title })}
-                        onToggle={() => update(todo.id, { done: !todo.done })}
+                        onOpen={() => setOpenTaskId(todo.id)}
+                        onToggle={() =>
+                          update(todo.id, {
+                            done: !todo.done,
+                            status: todo.done ? "todo" : "done",
+                          })
+                        }
                         onDelete={() => remove(todo.id)}
                         onDuplicate={() => duplicate(todo.id)}
                         onColor={(color) => update(todo.id, { color })}
                         onBackground={(background) =>
                           update(todo.id, { background })
                         }
-                        onEnter={() => addAfter(todo.id)}
-                        onEmptyBackspace={() => remove(todo.id)}
                         timerActive={timer?.taskId === todo.id}
                         timerRunning={
                           timer?.taskId === todo.id && timer.running
@@ -446,6 +560,23 @@ export function GettingStarted() {
           }}
           onPause={pauseTimer}
           onStop={stopTimer}
+        />
+      ) : null}
+
+      {openTask ? (
+        <TaskDetailModal
+          open
+          task={openTask}
+          elapsedMs={
+            timer?.taskId === openTask.id
+              ? currentElapsed(timer, clock)
+              : openTask.elapsedMs
+          }
+          onOpenChange={(open) => {
+            if (!open) setOpenTaskId(null)
+          }}
+          onChange={(patch) => update(openTask.id, patch)}
+          onResetTime={() => resetTaskTime(openTask.id)}
         />
       ) : null}
     </div>
@@ -674,16 +805,12 @@ function ColorMenu({
 
 function SortableTodo({
   todo,
-  autoFocus,
-  onFocused,
-  onChange,
+  onOpen,
   onToggle,
   onDelete,
   onDuplicate,
   onColor,
   onBackground,
-  onEnter,
-  onEmptyBackspace,
   timerActive,
   timerRunning,
   onStartTimer,
@@ -691,23 +818,18 @@ function SortableTodo({
   onStopTimer,
 }: {
   todo: Todo
-  autoFocus: boolean
-  onFocused: () => void
-  onChange: (title: string) => void
+  onOpen: () => void
   onToggle: () => void
   onDelete: () => void
   onDuplicate: () => void
   onColor: (color: TaskColorId | undefined) => void
   onBackground: (color: TaskColorId | undefined) => void
-  onEnter: () => void
-  onEmptyBackspace: () => void
   timerActive: boolean
   timerRunning: boolean
   onStartTimer: () => void
   onPauseTimer: () => void
   onStopTimer: () => void
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
   const {
     attributes,
     listeners,
@@ -718,12 +840,6 @@ function SortableTodo({
   } = useSortable({ id: todo.id })
   const text = taskColor(todo.color)
   const background = taskColor(todo.background)
-
-  useEffect(() => {
-    if (!autoFocus) return
-    inputRef.current?.focus()
-    onFocused()
-  }, [autoFocus, onFocused])
 
   return (
     <div
@@ -798,32 +914,43 @@ function SortableTodo({
           </svg>
         ) : null}
       </button>
-      <input
-        ref={inputRef}
-        value={todo.title}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault()
-            onEnter()
-          }
-          if (event.key === "Backspace" && todo.title === "") {
-            event.preventDefault()
-            onEmptyBackspace()
-          }
-        }}
-        placeholder="Write anything"
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={todo.title ? `Open ${todo.title}` : "Open task"}
         className={cn(
-          "min-w-0 flex-1 bg-transparent py-1 text-[16px] outline-none",
+          "min-w-0 flex-1 rounded-sm py-1 text-left text-[16px] outline-none",
           todo.done && "line-through",
           text
-            ? [text.textClass, "placeholder:text-current"]
-            : [
-                "placeholder:text-muted-foreground",
-                todo.done && "text-muted-foreground",
-              ]
+            ? text.textClass
+            : todo.done
+              ? "text-muted-foreground"
+              : "text-foreground",
+          !todo.title && "text-muted-foreground"
         )}
-      />
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate">{todo.title || "Write anything"}</span>
+          {todo.priority !== "none" ? (
+            <span
+              className={cn(
+                "size-1.5 shrink-0 rounded-full",
+                TASK_PRIORITIES.find((item) => item.id === todo.priority)?.swatch
+              )}
+            />
+          ) : null}
+          {todo.dueDate ? (
+            <span className="shrink-0 text-[12px] text-muted-foreground">
+              {todo.dueDate}
+            </span>
+          ) : null}
+          {todo.labels[0] ? (
+            <span className="shrink-0 rounded-full bg-black/5 px-1.5 py-0.5 text-[11px] text-muted-foreground dark:bg-white/8">
+              {todo.labels[0]}
+            </span>
+          ) : null}
+        </span>
+      </button>
       <button
         type="button"
         onClick={timerRunning ? onPauseTimer : onStartTimer}

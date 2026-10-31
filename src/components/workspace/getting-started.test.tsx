@@ -63,7 +63,7 @@ test("reorders tasks with the keyboard drag", async () => {
   try {
     render(<GettingStarted />)
 
-    expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: "Open First" })).toBeInTheDocument()
     await pause()
     const handles = screen.getAllByRole("button", { name: "Drag to reorder" })
     handles[0]?.focus()
@@ -86,8 +86,8 @@ test("reorders tasks with the keyboard drag", async () => {
     await pause(1200)
 
     const titles = screen
-      .getAllByRole("textbox")
-      .map((input) => (input as HTMLInputElement).value)
+      .getAllByRole("button", { name: /^Open / })
+      .map((button) => button.textContent)
     expect(titles).toEqual(["Second", "First"])
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
@@ -103,7 +103,7 @@ test("play starts a fixed timer and stop hides it", async () => {
   const user = userEvent.setup()
   render(<GettingStarted />)
 
-  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+  expect(await screen.findByRole("button", { name: "Open First" })).toBeInTheDocument()
 
   await user.click(screen.getAllByRole("button", { name: "Play timer" })[0]!)
   expect(screen.getByRole("button", { name: "Start timer" })).toBeInTheDocument()
@@ -121,7 +121,7 @@ test("timer card snaps to the nearest corner after a drag", async () => {
   const user = userEvent.setup()
   render(<GettingStarted />)
 
-  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+  expect(await screen.findByRole("button", { name: "Open First" })).toBeInTheDocument()
   await user.click(screen.getAllByRole("button", { name: "Play timer" })[0]!)
 
   const card = document.querySelector("[data-corner]")
@@ -153,7 +153,7 @@ test("right-clicking the drag handle duplicates, recolors, and deletes", async (
   const user = userEvent.setup()
   render(<GettingStarted />)
 
-  expect(await screen.findByDisplayValue("First")).toBeInTheDocument()
+  expect(await screen.findByRole("button", { name: "Open First" })).toBeInTheDocument()
 
   async function openHandleMenu() {
     const handle = screen.getAllByRole("button", { name: "Drag to reorder" })[0]
@@ -195,7 +195,7 @@ test("right-clicking the drag handle duplicates, recolors, and deletes", async (
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
 
-  expect(screen.getAllByDisplayValue("First")).toHaveLength(2)
+  expect(screen.getAllByRole("button", { name: "Open First" })).toHaveLength(2)
   const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
     title: string
     color?: string
@@ -210,11 +210,70 @@ test("right-clicking the drag handle duplicates, recolors, and deletes", async (
   await user.click(screen.getByRole("menuitem", { name: "Delete" }))
 
   await waitFor(() => {
-    expect(screen.getAllByDisplayValue("First")).toHaveLength(1)
+    expect(screen.getAllByRole("button", { name: "Open First" })).toHaveLength(1)
   })
-  expect(screen.getByDisplayValue("Second")).toBeInTheDocument()
+  expect(screen.getByRole("button", { name: "Open Second" })).toBeInTheDocument()
   const afterDelete = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
     title: string
   }[]
   expect(afterDelete.map((todo) => todo.title)).toEqual(["First", "Second"])
+})
+
+test("opening a task shows a modal and reset is the only way to clear time", async () => {
+  const user = userEvent.setup()
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([{ id: "first", title: "First", done: false, elapsedMs: 65000 }])
+  )
+  render(<GettingStarted />)
+
+  await user.click(await screen.findByRole("button", { name: "Open First" }))
+  expect(screen.getByRole("dialog")).toBeInTheDocument()
+  expect(screen.getByDisplayValue("First")).toBeInTheDocument()
+  expect(screen.getByText("01:05")).toBeInTheDocument()
+
+  await user.click(screen.getByRole("button", { name: "Close" }))
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
+    elapsedMs?: number
+  }[]
+  expect(stored[0]?.elapsedMs).toBe(65000)
+
+  await user.click(screen.getByRole("button", { name: "Open First" }))
+  await user.click(screen.getByRole("button", { name: "Reset time" }))
+  expect(screen.getByText("00:00")).toBeInTheDocument()
+
+  await waitFor(() => {
+    const afterReset = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
+      elapsedMs?: number
+    }[]
+    expect(afterReset[0]?.elapsedMs).toBe(0)
+  })
+})
+
+test("task modal saves status, description, and labels", async () => {
+  const user = userEvent.setup()
+  render(<GettingStarted />)
+
+  await user.click(await screen.findByRole("button", { name: "Open First" }))
+  await user.type(screen.getByPlaceholderText("Add a description…"), "Ship notes")
+  await user.selectOptions(screen.getByLabelText("Status"), "in_progress")
+  await user.click(screen.getByRole("button", { name: "Launch" }))
+  await user.click(screen.getByRole("button", { name: "Close" }))
+
+  await waitFor(() => {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as {
+      description?: string
+      status?: string
+      labels?: string[]
+    }[]
+    expect(stored[0]).toMatchObject({
+      description: "Ship notes",
+      status: "in_progress",
+      labels: ["Launch"],
+    })
+  })
 })
