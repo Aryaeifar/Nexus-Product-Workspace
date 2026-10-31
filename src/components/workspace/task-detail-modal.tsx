@@ -109,7 +109,7 @@ export function TaskDetailModal({
   onResetTime,
 }: {
   open: boolean
-  task: TaskDetails
+  task: TaskDetails | null
   elapsedMs: number
   running?: boolean
   startedAt?: number | null
@@ -121,7 +121,7 @@ export function TaskDetailModal({
   const [labelDraft, setLabelDraft] = useState("")
   const [now, setNow] = useState(() => Date.now())
   const focusId = useRef<string | null>(null)
-  const heading = task.title.trim() || "Untitled"
+  const heading = task?.title.trim() || "Untitled"
   const liveElapsed =
     open && running && startedAt != null
       ? elapsedMs + Math.max(0, now - startedAt)
@@ -132,6 +132,21 @@ export function TaskDetailModal({
     const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [open, running, startedAt])
+
+  if (!task) {
+    return (
+      <Modal
+        open={false}
+        onOpenChange={onOpenChange}
+        onOpenChangeComplete={onOpenChangeComplete}
+        title="Task"
+        description="Task details"
+      >
+        {null}
+      </Modal>
+    )
+  }
+
   const doneCount = task.subtasks.filter((item) => item.done).length
   const progress =
     task.subtasks.length === 0 ? 0 : doneCount / task.subtasks.length

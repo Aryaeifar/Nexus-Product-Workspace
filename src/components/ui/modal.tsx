@@ -30,13 +30,16 @@ export function Modal({
       onOpenChangeComplete={onOpenChangeComplete}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-[70] bg-black/36 backdrop-blur-[3px] transition-opacity duration-200 ease-out data-starting-style:opacity-0 data-ending-style:opacity-0 dark:bg-black/56" />
+        <Dialog.Backdrop className="fixed inset-0 z-[70] bg-black/36 backdrop-blur-[3px] transition-opacity duration-200 ease-out starting:opacity-0 data-starting-style:opacity-0 data-ending-style:opacity-0 dark:bg-black/56" />
         <Dialog.Viewport className="fixed inset-0 z-[70] grid place-items-center p-3 sm:p-5">
           <Dialog.Popup
             className={cn(
               "relative flex max-h-[min(840px,calc(100vh-2rem))] w-full max-w-[920px] flex-col overflow-hidden rounded-[24px] bg-background outline-none",
               "shadow-[0_0_0_1px_rgb(15_15_15/0.05),0_16px_40px_rgb(15_15_15/0.12)] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.07),0_16px_48px_rgb(0_0_0/0.4)]",
-              "origin-center transform-gpu transition-[opacity,transform] duration-200 ease-out will-change-[opacity,transform] data-starting-style:translate-y-2 data-starting-style:scale-[0.985] data-starting-style:opacity-0 data-ending-style:translate-y-2 data-ending-style:scale-[0.985] data-ending-style:opacity-0",
+              "origin-center transform-gpu transition-[opacity,transform] duration-200 ease-out will-change-[opacity,transform]",
+              "starting:translate-y-2 starting:scale-[0.985] starting:opacity-0",
+              "data-starting-style:translate-y-2 data-starting-style:scale-[0.985] data-starting-style:opacity-0",
+              "data-ending-style:translate-y-2 data-ending-style:scale-[0.985] data-ending-style:opacity-0",
               className
             )}
           >

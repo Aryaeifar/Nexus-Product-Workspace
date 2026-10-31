@@ -277,7 +277,6 @@ export function GettingStarted() {
   const [timer, setTimer] = useState<TaskTimer | null>(null)
   const [timerCorner, setTimerCorner] = useState<TimerCorner>("bottom-right")
   const [openTaskId, setOpenTaskId] = useState<string | null>(null)
-  const [modalMounted, setModalMounted] = useState(false)
   const todosRef = useRef(todos)
   const timerRef = useRef(timer)
   const lastOpenTaskRef = useRef<Todo | null>(null)
@@ -454,10 +453,6 @@ export function GettingStarted() {
   if (openTask) lastOpenTaskRef.current = openTask
   const modalTask = openTask ?? lastOpenTaskRef.current
 
-  useEffect(() => {
-    if (openTaskId) setModalMounted(true)
-  }, [openTaskId])
-
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -587,32 +582,31 @@ export function GettingStarted() {
         />
       ) : null}
 
-      {modalMounted && modalTask ? (
-        <TaskDetailModal
-          open={openTaskId != null}
-          task={modalTask}
-          elapsedMs={
-            timer?.taskId === modalTask.id
-              ? timer.elapsedMs
-              : modalTask.elapsedMs
-          }
-          running={timer?.taskId === modalTask.id && timer.running}
-          startedAt={
-            timer?.taskId === modalTask.id ? timer.startedAt : null
-          }
-          onOpenChange={(open) => {
-            if (!open) setOpenTaskId(null)
-          }}
-          onOpenChangeComplete={(open) => {
-            if (!open) {
-              setModalMounted(false)
-              lastOpenTaskRef.current = null
-            }
-          }}
-          onChange={(patch) => update(modalTask.id, patch)}
-          onResetTime={() => resetTaskTime(modalTask.id)}
-        />
-      ) : null}
+      <TaskDetailModal
+        open={openTaskId != null && modalTask != null}
+        task={modalTask}
+        elapsedMs={
+          modalTask && timer?.taskId === modalTask.id
+            ? timer.elapsedMs
+            : (modalTask?.elapsedMs ?? 0)
+        }
+        running={Boolean(modalTask && timer?.taskId === modalTask.id && timer.running)}
+        startedAt={
+          modalTask && timer?.taskId === modalTask.id ? timer.startedAt : null
+        }
+        onOpenChange={(open) => {
+          if (!open) setOpenTaskId(null)
+        }}
+        onOpenChangeComplete={(open) => {
+          if (!open) lastOpenTaskRef.current = null
+        }}
+        onChange={(patch) => {
+          if (modalTask) update(modalTask.id, patch)
+        }}
+        onResetTime={() => {
+          if (modalTask) resetTaskTime(modalTask.id)
+        }}
+      />
     </div>
   )
 }
