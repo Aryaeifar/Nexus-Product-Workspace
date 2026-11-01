@@ -189,8 +189,17 @@
     line-height: 1.47;
     letter-spacing: -0.374px;
     }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  a[href],
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for] {
     cursor: pointer;
+    }
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
     }
   @media (prefers-reduced-motion: reduce) {
     *,

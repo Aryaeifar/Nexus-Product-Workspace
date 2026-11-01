@@ -3,6 +3,7 @@
 import {
   BookOpen,
   FileText,
+  FolderKanban,
   Home,
   Inbox,
   LayoutGrid,
@@ -14,6 +15,7 @@ import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 
 import { NexusIcon } from "@/components/brand/nexus-mark"
+import { useProjects } from "@/context/projects-context"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,11 +29,13 @@ import { cn } from "@/lib/utils"
 const SEGMENT_LABELS: Record<string, string> = {
   home: "Home",
   inbox: "Inbox",
+  projekts: "Projects",
 }
 
 const SEGMENT_ICONS: Record<string, LucideIcon> = {
   home: Home,
   inbox: Inbox,
+  projekts: FolderKanban,
 }
 
 const HASH_SECTIONS: Record<string, { label: string; icon: LucideIcon }> = {
@@ -67,9 +71,31 @@ const WORKSPACE_CRUMB: Crumb = {
   icon: LayoutGrid,
 }
 
-function crumbsForLocation(pathname: string, hash: string): Crumb[] {
+function crumbsForLocation(
+  pathname: string,
+  hash: string,
+  projectNameForSlug?: (slug: string) => string | undefined
+): Crumb[] {
   if (pathname === "/") {
     return [{ id: "nexus", href: "/", label: "Nexus", icon: NexusIcon }]
+  }
+
+  if (pathname.startsWith("/projekts")) {
+    const segments = pathname.split("/").filter(Boolean)
+    return [
+      WORKSPACE_CRUMB,
+      ...segments.map((segment, index) => {
+        const href = `/${segments.slice(0, index + 1).join("/")}`
+        const projectName =
+          index > 0 ? projectNameForSlug?.(decodeURIComponent(segment)) : undefined
+        return {
+          id: `segment-${segment}`,
+          href,
+          label: projectName ?? labelForSegment(segment),
+          icon: iconForSegment(segment),
+        }
+      }),
+    ]
   }
 
   if (!pathname.startsWith("/home")) {
@@ -152,7 +178,8 @@ export function PageBreadcrumb({ className }: { className?: string }) {
     return () => window.removeEventListener("hashchange", syncHash)
   }, [pathname])
 
-  const crumbs = crumbsForLocation(pathname, hash)
+  const { projectBySlug } = useProjects()
+  const crumbs = crumbsForLocation(pathname, hash, (slug) => projectBySlug(slug)?.name)
   const lastIndex = crumbs.length - 1
 
   return (
